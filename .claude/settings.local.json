@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git ls-remote *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git config *)",
+      "mcp__8795078d-d5b0-406a-80de-9ee0d9f6cb13__deploy_to_vercel",
+      "Bash(npx vercel *)"
+    ]
+  }
+}

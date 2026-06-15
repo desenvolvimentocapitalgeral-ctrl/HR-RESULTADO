@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>HR RESULTADO</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -18,166 +19,154 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
 
-/* ─── SIDEBAR ─── */
+/* SIDEBAR */
 #sidebar{width:var(--sidebar);background:var(--g1);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
-.logo-area{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.logo-area{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
 .logo-wrap{display:flex;align-items:center;gap:10px}
 .logo-icon{width:38px;height:38px;flex-shrink:0}
 .logo-text{color:#fff;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;line-height:1.2}
 .logo-text span{color:var(--gold);display:block;font-size:10px;font-weight:400;letter-spacing:.08em;text-transform:uppercase}
-nav{flex:1;padding:12px 0}
+nav{flex:1;padding:10px 0}
 .nav-section{padding:10px 16px 4px;color:rgba(255,255,255,.35);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;border-left:3px solid transparent;transition:.15s}
 .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav-item.active{background:rgba(201,162,39,.12);color:var(--gold);border-left-color:var(--gold)}
 .nav-item svg{width:16px;height:16px;flex-shrink:0}
-.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:11px}
+.sidebar-footer{padding:10px 16px;border-top:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:11px;line-height:1.6}
 
-/* ─── TOPBAR ─── */
-#topbar{position:fixed;top:0;left:var(--sidebar);right:0;height:var(--topbar);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:90}
+/* TOPBAR */
+#topbar{position:fixed;top:0;left:var(--sidebar);right:0;height:var(--topbar);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;z-index:90}
 .topbar-title{font-family:'Archivo',sans-serif;font-weight:600;font-size:15px;color:var(--g2);flex:1}
-.topbar-search{flex:1;max-width:280px;position:relative}
-.topbar-search input{width:100%;padding:7px 12px 7px 34px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);outline:none}
-.topbar-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+#sync-status{font-size:11px;padding:3px 10px;border-radius:12px;font-weight:500;display:flex;align-items:center;gap:5px}
+#sync-status.ok{background:#DCFCE7;color:#15803D}
+#sync-status.saving{background:#FEF3C7;color:#D97706}
+#sync-status.offline{background:#FEE2E2;color:#DC2626}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s;white-space:nowrap}
 .btn-primary{background:var(--g2);color:#fff}.btn-primary:hover{background:var(--g3)}
 .btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:#b8911e}
-.btn-outline{background:#fff;color:var(--g2);border:1px solid var(--border)}.btn-outline:hover{border-color:var(--g3);color:var(--g3)}
+.btn-outline{background:#fff;color:var(--g2);border:1px solid var(--border)}.btn-outline:hover{border-color:var(--g3)}
 .btn-sm{padding:5px 10px;font-size:11px}
 .btn-danger{background:var(--danger);color:#fff}
 .btn svg{width:13px;height:13px}
 
-/* ─── MAIN ─── */
+/* MAIN */
 #main{margin-left:var(--sidebar);padding-top:var(--topbar);min-height:100vh;flex:1}
 .screen{display:none;padding:24px}
 .screen.active{display:block}
 
-/* ─── CARDS ─── */
+/* CARDS & GRID */
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}
-.card-title{font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card-title{font-family:'Archivo',sans-serif;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
-.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.kpi-value{font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;color:var(--g2)}
-.kpi-delta{font-size:11px;margin-top:4px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.kpi-value{font-family:'Archivo',sans-serif;font-weight:700;font-size:20px;color:var(--g2)}
+.kpi-delta{font-size:11px;margin-top:3px}
 .delta-up{color:var(--ok)}.delta-down{color:var(--danger)}
 .kpi-bar{height:3px;background:var(--border);border-radius:2px;margin-top:10px}
 .kpi-bar-fill{height:100%;border-radius:2px;background:var(--gold)}
 
-/* ─── FLUXO DE CAIXA TABLE ─── */
+/* FLUXO TABLE */
 .fc-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);background:#fff}
-.fc-table{border-collapse:collapse;min-width:100%;font-size:11.5px}
-.fc-table th,.fc-table td{border:1px solid #E8E3DA;padding:5px 8px;white-space:nowrap}
-.fc-table th{background:var(--g2);color:#fff;font-weight:600;font-size:11px;text-align:center;position:sticky;top:0;z-index:5}
-.fc-table th:first-child,.fc-table td:first-child{position:sticky;left:0;z-index:6;min-width:220px;max-width:220px;text-align:left}
+.fc-table{border-collapse:collapse;min-width:100%;font-size:11px}
+.fc-table th,.fc-table td{border:1px solid #E8E3DA;padding:4px 7px;white-space:nowrap}
+.fc-table th{background:var(--g2);color:#fff;font-weight:600;font-size:10.5px;text-align:center;position:sticky;top:0;z-index:5}
+.fc-table th:first-child,.fc-table td:first-child{position:sticky;left:0;z-index:6;min-width:210px;max-width:210px;text-align:left}
 .fc-table th:first-child{z-index:7;background:var(--g1)}
-.fc-table td:first-child{background:#fff;font-weight:500}
-.fc-table td{text-align:right;color:var(--text)}
+.fc-table td:first-child{background:#fff;font-weight:500;font-size:11.5px}
+.fc-table td{text-align:right}
 .fc-table .th-week{background:var(--g3)!important}
 .fc-table .th-total{background:var(--g1)!important}
-/* row types */
-.row-section td{background:var(--g2)!important;color:#fff!important;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.row-section td{background:var(--g2)!important;color:#fff!important;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
 .row-section td:first-child{background:var(--g1)!important}
-.row-receita td{background:#F0FAF4}
-.row-custo td{background:#FEF2F2}
-.row-invest td{background:#FFFBEB}
-.row-mov td{background:#F0F4FF}
+.row-receita td{background:#F0FAF4}.row-custo td{background:#FEF2F2}
+.row-invest td{background:#FFFBEB}.row-mov td{background:#F0F4FF}
 .row-subtotal td{background:#E8F5EE!important;font-weight:700;color:var(--g2)!important;border-top:2px solid var(--g4)!important}
 .row-subtotal td:first-child{background:#D4EDDE!important}
 .row-caixa td{background:var(--g2)!important;color:var(--gold2)!important;font-weight:700}
 .row-caixa td:first-child{background:var(--g1)!important}
 .row-summary td{background:#FFF8E7;font-weight:500}
-.fc-table td.val-pos{color:var(--ok);font-weight:600}
-.fc-table td.val-neg{color:var(--danger);font-weight:600}
-.fc-table td.col-week{background:#EBF5F0!important;font-weight:600;color:var(--g2)!important}
-.row-receita td.col-week{background:#D4EDDE!important}
-.row-custo td.col-week{background:#FECACA!important;color:var(--danger)!important}
-.row-invest td.col-week{background:#FDE68A!important}
-.row-mov td.col-week{background:#C7D2FE!important}
+.val-pos{color:var(--ok);font-weight:600}.val-neg{color:var(--danger);font-weight:600}
+.col-week{background:#EBF5F0!important;font-weight:600;color:var(--g2)!important}
+.row-receita .col-week{background:#D4EDDE!important}
+.row-custo .col-week{background:#FECACA!important;color:var(--danger)!important}
+.row-invest .col-week{background:#FDE68A!important}
+.row-mov .col-week{background:#C7D2FE!important}
+.fc-input{width:60px;border:none;background:transparent;text-align:right;font-size:10.5px;color:inherit;outline:none;font-family:inherit}
+.fc-input:focus{background:rgba(201,162,39,.15);border-radius:3px}
 
-/* ─── TABS ─── */
-.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
-.tab{padding:9px 20px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);transition:.15s}
+/* TABS & TOOLBAR */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px}
+.tab{padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);transition:.15s}
 .tab.active{color:var(--g2);border-bottom-color:var(--g2);font-weight:600}
-.tab:hover{color:var(--g2)}
-
-/* ─── TOOLBAR ─── */
-.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar-left{flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-select.ctrl{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:var(--text);outline:none;cursor:pointer}
+select.ctrl{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:var(--text);outline:none;cursor:pointer}
 select.ctrl:focus{border-color:var(--g3)}
 
-/* ─── BADGE ─── */
+/* BADGE */
 .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500}
-.badge-green{background:#DCFCE7;color:#15803D}
-.badge-red{background:#FEE2E2;color:#DC2626}
-.badge-yellow{background:#FEF3C7;color:#D97706}
-.badge-blue{background:#DBEAFE;color:#1D4ED8}
-.badge-gray{background:#F3F4F6;color:#6B7280}
+.badge-green{background:#DCFCE7;color:#15803D}.badge-red{background:#FEE2E2;color:#DC2626}
+.badge-yellow{background:#FEF3C7;color:#D97706}.badge-blue{background:#DBEAFE;color:#1D4ED8}
+.badge-gray{background:#F3F4F6;color:#6B7280}.badge-purple{background:#EDE9FE;color:#7C3AED}
 
-/* ─── LANÇAMENTOS TABLE ─── */
+/* DATA TABLE */
 .data-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .data-table th{background:var(--g2);color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}
 .data-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 .data-table tr:hover td{background:#F9F7F3}
-.data-table .td-num{text-align:right;font-family:'Archivo',sans-serif;font-size:12px}
+.td-num{text-align:right;font-family:'Archivo',sans-serif;font-size:12px}
 
-/* ─── CONCILIAÇÃO ─── */
-.conc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
-.conc-stat{background:#fff;border-radius:8px;border:1px solid var(--border);padding:14px 16px;text-align:center;cursor:pointer;transition:.15s}
-.conc-stat:hover{border-color:var(--g3);transform:translateY(-1px)}
-.conc-stat.active{border-color:var(--g2);box-shadow:0 0 0 2px rgba(27,67,50,.15)}
-.conc-stat .cs-num{font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;margin-bottom:2px}
-.conc-stat .cs-label{font-size:11px;color:var(--muted)}
-.cs-ok .cs-num{color:var(--ok)}.cs-diff .cs-num{color:var(--warn)}.cs-miss .cs-num{color:var(--danger)}.cs-dup .cs-num{color:#7C3AED}
+/* CONCILIAÇÃO */
+.conc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.conc-stat{background:#fff;border-radius:8px;border:2px solid var(--border);padding:14px;text-align:center;cursor:pointer;transition:.15s}
+.conc-stat:hover,.conc-stat.active{border-color:var(--g2)}
+.cs-num{font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;margin-bottom:2px}
+.cs-label{font-size:11px;color:var(--muted)}
+.cs-ok .cs-num{color:var(--ok)}.cs-diff .cs-num{color:var(--warn)}
+.cs-miss .cs-num{color:var(--danger)}.cs-dup .cs-num{color:#7C3AED}
 
-/* ─── RELATÓRIOS ─── */
+/* RELATÓRIOS */
 .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.report-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.report-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px}
 .report-card h3{font-family:'Archivo',sans-serif;font-weight:600;font-size:14px;color:var(--g2)}
 .report-card p{font-size:12px;color:var(--muted);flex:1}
 .report-actions{display:flex;gap:8px}
 
-/* ─── PLANO DE CONTAS ─── */
-.pc-table{width:100%;border-collapse:collapse;font-size:12.5px}
-.pc-table th{background:var(--g2);color:#fff;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase}
-.pc-table td{padding:7px 12px;border-bottom:1px solid var(--border)}
-.pc-table .pc-group{background:#F0FAF4;font-weight:700;color:var(--g2)}
-.pc-table .pc-sub{padding-left:28px;color:var(--muted)}
-
-/* ─── MODAL ─── */
+/* MODAL */
 .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
 .modal-backdrop.open{display:flex}
-.modal{background:#fff;border-radius:12px;padding:24px;width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal{background:#fff;border-radius:12px;padding:24px;width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .modal h2{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;color:var(--g2);margin-bottom:16px}
-.form-row{margin-bottom:14px}
-.form-row label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
 .form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;font-family:inherit}
 .form-row input:focus,.form-row select:focus{border-color:var(--g3)}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
 
-/* ─── CHART ─── */
-.chart-box{position:relative;height:220px}
-
-/* ─── UPLOAD ZONE ─── */
-.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg)}
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg)}
 .upload-zone:hover{border-color:var(--g3);background:#F0FAF4}
-.upload-zone svg{width:32px;height:32px;color:var(--muted);margin-bottom:8px}
-.upload-zone p{font-size:13px;color:var(--muted)}
+.upload-zone p{font-size:12px;color:var(--muted)}
 .upload-zone strong{color:var(--g2)}
 
-/* ─── MISC ─── */
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+/* MISC */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .page-header h1{font-family:'Archivo',sans-serif;font-size:20px;font-weight:700;color:var(--g2)}
 .page-header p{font-size:12px;color:var(--muted);margin-top:2px}
-.section-gap{margin-bottom:20px}
-.text-right{text-align:right}
-.fw600{font-weight:600}
+.section-gap{margin-bottom:18px}
 .color-ok{color:var(--ok)}.color-danger{color:var(--danger)}.color-gold{color:var(--gold)}
-.mt8{margin-top:8px}.mt16{margin-top:16px}
+.chart-box{position:relative;height:210px}
+.fw600{font-weight:600}
+.setup-banner{background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;border-radius:10px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:20px}
+.setup-banner h3{font-family:'Archivo',sans-serif;font-size:15px;margin-bottom:4px}
+.setup-banner p{font-size:12px;opacity:.85;line-height:1.5}
+.setup-banner .steps{list-style:none;margin-top:8px}
+.setup-banner .steps li{font-size:12px;padding:2px 0;opacity:.9}
+.setup-banner .steps li::before{content:'→ ';color:var(--gold2)}
 </style>
 </head>
 <body>
@@ -186,11 +175,11 @@ select.ctrl:focus{border-color:var(--g3)}
 <aside id="sidebar">
   <div class="logo-area">
     <div class="logo-wrap">
-      <svg class="logo-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="logo-icon" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
         <rect width="38" height="38" rx="8" fill="#C9A227"/>
-        <text x="5" y="27" font-family="Archivo,sans-serif" font-weight="800" font-size="22" fill="#0F2D1F">HR</text>
-        <path d="M30 12 C32 10 34 11 33 14 C32 16 30 16 29 14 Z" fill="#0F2D1F" opacity=".6"/>
-        <path d="M24 12 C22 10 20 11 21 14 C22 16 24 16 25 14 Z" fill="#0F2D1F" opacity=".6"/>
+        <text x="4" y="27" font-family="Archivo,sans-serif" font-weight="800" font-size="21" fill="#0F2D1F">HR</text>
+        <path d="M30 11 C32 9 34 10 33 13 C32 15 30 15 29 13Z" fill="#0F2D1F" opacity=".5"/>
+        <path d="M24 11 C22 9 20 10 21 13 C22 15 24 15 25 13Z" fill="#0F2D1F" opacity=".5"/>
       </svg>
       <div class="logo-text">HR RESULTADO<span>Sistema Financeiro</span></div>
     </div>
@@ -228,306 +217,229 @@ select.ctrl:focus{border-color:var(--g3)}
       Contas Bancárias
     </div>
   </nav>
-  <div class="sidebar-footer">v1.0 · HR RESULTADO &copy; 2026</div>
+  <div class="sidebar-footer">
+    v1.0 · HR RESULTADO © 2026<br>
+    <span id="sb-mode" style="color:var(--gold)">● Modo local</span>
+  </div>
 </aside>
 
 <!-- TOPBAR -->
 <header id="topbar">
   <div class="topbar-title" id="topbar-title">Dashboard</div>
-  <div class="topbar-search">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" placeholder="Buscar lançamento…"/>
-  </div>
-  <button class="btn btn-primary" onclick="openModal('modal-lancamento')">
+  <span id="sync-status" class="offline">● Offline</span>
+  <button class="btn btn-primary btn-sm" onclick="openModal('modal-lancamento')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Novo Lançamento
   </button>
 </header>
 
-<!-- MAIN -->
 <main id="main">
 
-<!-- ═══════════════════════════════ DASHBOARD ═══════════════════════════════ -->
+<!-- ═══ DASHBOARD ═══ -->
 <section class="screen active" id="screen-dashboard">
+  <div id="setup-area"></div>
   <div class="page-header">
-    <div><h1>Dashboard Executivo</h1><p>Visão consolidada · Junho 2026</p></div>
+    <div><h1>Dashboard Executivo</h1><p id="dash-periodo">Junho 2026</p></div>
     <div style="display:flex;gap:8px">
-      <select class="ctrl" id="dash-ano"><option>2026</option><option>2025</option></select>
-      <select class="ctrl" id="dash-mes"><option value="0">Todos os meses</option><option value="6">Junho</option><option value="5">Maio</option></select>
+      <select class="ctrl" id="dash-ano" onchange="renderDash()"><option>2026</option><option>2025</option></select>
+      <select class="ctrl" id="dash-mes" onchange="renderDash()">
+        <option value="0">Todos os meses</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+        <option value="4">Abril</option><option value="5">Maio</option><option value="6" selected>Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
     </div>
   </div>
-  <div class="grid-4 section-gap" id="kpi-area">
-    <div class="kpi"><div class="kpi-label">Saldo em Caixa</div><div class="kpi-value" id="kpi-caixa">R$ 612.760</div><div class="kpi-delta delta-up">▲ 8,3% vs mês anterior</div><div class="kpi-bar"><div class="kpi-bar-fill" style="width:68%"></div></div></div>
-    <div class="kpi"><div class="kpi-label">Receita Bruta (mês)</div><div class="kpi-value color-ok" id="kpi-rec">R$ 0</div><div class="kpi-delta delta-up">▲ — </div><div class="kpi-bar"><div class="kpi-bar-fill" style="width:0%"></div></div></div>
-    <div class="kpi"><div class="kpi-label">Custos e Despesas</div><div class="kpi-value color-danger" id="kpi-cust">R$ 0</div><div class="kpi-delta delta-down">▼ —</div><div class="kpi-bar"><div class="kpi-bar-fill" style="width:0%;background:var(--danger)"></div></div></div>
-    <div class="kpi"><div class="kpi-label">Resultado Operacional</div><div class="kpi-value" id="kpi-res">R$ 0</div><div class="kpi-delta">—</div><div class="kpi-bar"><div class="kpi-bar-fill" style="width:0%"></div></div></div>
+  <div class="grid-4 section-gap">
+    <div class="kpi"><div class="kpi-label">Saldo em Caixa</div><div class="kpi-value" id="kpi-caixa">R$ —</div><div class="kpi-delta" id="kpi-caixa-d">—</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-caixa-bar" style="width:0%"></div></div></div>
+    <div class="kpi"><div class="kpi-label">Receita Bruta</div><div class="kpi-value color-ok" id="kpi-rec">R$ —</div><div class="kpi-delta delta-up" id="kpi-rec-d">—</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-rec-bar" style="width:0%;background:var(--ok)"></div></div></div>
+    <div class="kpi"><div class="kpi-label">Custos e Despesas</div><div class="kpi-value color-danger" id="kpi-cust">R$ —</div><div class="kpi-delta delta-down" id="kpi-cust-d">—</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-cust-bar" style="width:0%;background:var(--danger)"></div></div></div>
+    <div class="kpi"><div class="kpi-label">Resultado Operacional</div><div class="kpi-value" id="kpi-res">R$ —</div><div class="kpi-delta" id="kpi-res-d">—</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-res-bar" style="width:0%"></div></div></div>
   </div>
   <div class="grid-2 section-gap">
     <div class="card"><div class="card-title">Receitas vs Despesas · 2026</div><div class="chart-box"><canvas id="chart-recdesp"></canvas></div></div>
-    <div class="card"><div class="card-title">Centro de Custo</div><div class="chart-box"><canvas id="chart-cc"></canvas></div></div>
+    <div class="card"><div class="card-title">Distribuição por Centro de Custo</div><div class="chart-box"><canvas id="chart-cc"></canvas></div></div>
   </div>
   <div class="card">
     <div class="card-title">Últimos Lançamentos</div>
     <table class="data-table">
-      <thead><tr><th>Data</th><th>Descrição</th><th>Conta</th><th>Centro de Custo</th><th>Tipo</th><th>Valor</th></tr></thead>
-      <tbody id="tbody-recent"></tbody>
+      <thead><tr><th>Data</th><th>Descrição</th><th>Conta</th><th>Centro de Custo</th><th>Tipo</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody id="tbody-recent"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Nenhum lançamento ainda</td></tr></tbody>
     </table>
   </div>
 </section>
 
-<!-- ═══════════════════════════════ FLUXO DE CAIXA ═══════════════════════════════ -->
+<!-- ═══ FLUXO DE CAIXA ═══ -->
 <section class="screen" id="screen-fluxo">
   <div class="page-header">
     <div><h1>Fluxo de Caixa</h1><p>Direto · Mês e Ano</p></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="exportFluxoXLSX()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Excel
-      </button>
-      <button class="btn btn-outline btn-sm" onclick="exportFluxoPDF()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        PDF
-      </button>
+      <button class="btn btn-outline btn-sm" onclick="exportFluxoXLSX()">⬇ Excel</button>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">⬇ PDF</button>
     </div>
   </div>
   <div class="tabs">
-    <div class="tab active" id="tab-mes" onclick="switchFC('mes')">Fluxo Mensal (Dias)</div>
-    <div class="tab" id="tab-ano" onclick="switchFC('ano')">Fluxo Anual (Meses)</div>
+    <div class="tab active" id="tab-mes" onclick="switchFC('mes')">Fluxo Mensal (Dia a Dia)</div>
+    <div class="tab" id="tab-ano" onclick="switchFC('ano')">Fluxo Anual (Jan–Dez)</div>
   </div>
 
-  <!-- MÊS -->
+  <!-- MENSAL -->
   <div id="fc-mes-panel">
     <div class="toolbar">
       <div class="toolbar-left">
-        <select class="ctrl" id="sel-ano-mes" onchange="renderFCMes()">
-          <option>2026</option><option>2025</option>
-        </select>
+        <select class="ctrl" id="sel-ano-mes" onchange="renderFCMes()"><option>2026</option><option>2025</option></select>
         <select class="ctrl" id="sel-mes" onchange="renderFCMes()">
           <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
           <option value="4">Abril</option><option value="5" selected>Maio</option><option value="6">Junho</option>
           <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
           <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
         </select>
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('imp-lancamentos').click()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Importar XLSX
-        </button>
-        <input type="file" id="imp-lancamentos" accept=".xlsx,.csv" style="display:none" onchange="importLancamentos(this)"/>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('imp-xlsx').click()">⬆ Importar XLSX</button>
+        <input type="file" id="imp-xlsx" accept=".xlsx,.csv" style="display:none" onchange="importXLSX(this)"/>
       </div>
-      <span id="fc-mes-info" style="font-size:12px;color:var(--muted)"></span>
+      <span id="fc-mes-info" style="font-size:11px;color:var(--muted)"></span>
     </div>
-    <div class="fc-wrap" id="fc-mes-wrap">
-      <table class="fc-table" id="fc-mes-table"></table>
-    </div>
+    <div class="fc-wrap"><table class="fc-table" id="fc-mes-table"></table></div>
   </div>
 
-  <!-- ANO -->
+  <!-- ANUAL -->
   <div id="fc-ano-panel" style="display:none">
     <div class="toolbar">
-      <div class="toolbar-left">
-        <select class="ctrl" id="sel-ano" onchange="renderFCAno()">
-          <option>2026</option><option>2025</option>
-        </select>
-      </div>
+      <select class="ctrl" id="sel-ano" onchange="renderFCAno()"><option>2026</option><option>2025</option></select>
+      <button class="btn btn-outline btn-sm" onclick="exportFCAnoXLSX()">⬇ Excel Anual</button>
     </div>
-    <div class="fc-wrap" id="fc-ano-wrap">
-      <table class="fc-table" id="fc-ano-table"></table>
-    </div>
+    <div class="fc-wrap"><table class="fc-table" id="fc-ano-table"></table></div>
   </div>
 </section>
 
-<!-- ═══════════════════════════════ LANÇAMENTOS ═══════════════════════════════ -->
+<!-- ═══ LANÇAMENTOS ═══ -->
 <section class="screen" id="screen-lancamentos">
   <div class="page-header">
     <div><h1>Lançamentos</h1><p id="lanc-count">0 registros</p></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="exportLancXLSX()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Excel
-      </button>
+      <button class="btn btn-outline btn-sm" onclick="exportLancXLSX()">⬇ Excel</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-lancamento')">+ Novo</button>
     </div>
   </div>
   <div class="toolbar section-gap">
     <div class="toolbar-left">
-      <select class="ctrl" id="f-tipo"><option value="">Todos os Tipos</option><option value="R">Receita</option><option value="D">Despesa</option><option value="I">Investimento</option><option value="M">Mútuo</option></select>
-      <select class="ctrl" id="f-conta"><option value="">Todas as Contas</option></select>
-      <select class="ctrl" id="f-mes-lanc"><option value="">Todos os Meses</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select>
-      <button class="btn btn-outline btn-sm" onclick="filterLanc()">Filtrar</button>
+      <select class="ctrl" id="f-tipo-fil"><option value="">Todos os Tipos</option><option value="R">Receita</option><option value="D">Despesa</option><option value="I">Investimento</option><option value="M">Mútuo</option></select>
+      <select class="ctrl" id="f-mes-lanc"><option value="">Todos os Meses</option><option value="01">Jan</option><option value="02">Fev</option><option value="03">Mar</option><option value="04">Abr</option><option value="05">Mai</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Ago</option><option value="09">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option></select>
+      <button class="btn btn-outline btn-sm" onclick="renderLanc()">Filtrar</button>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <table class="data-table">
       <thead><tr><th>Data</th><th>Descrição</th><th>Conta</th><th>Centro de Custo</th><th>Tipo</th><th>Banco</th><th style="text-align:right">Valor</th><th>Status</th><th></th></tr></thead>
-      <tbody id="tbody-lanc"></tbody>
+      <tbody id="tbody-lanc"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum lançamento</td></tr></tbody>
     </table>
   </div>
 </section>
 
-<!-- ═══════════════════════════════ CONCILIAÇÃO ═══════════════════════════════ -->
+<!-- ═══ CONCILIAÇÃO ═══ -->
 <section class="screen" id="screen-conciliacao">
   <div class="page-header">
-    <div><h1>Conciliação Bancária</h1><p>Matching automático · IA de Classificação</p></div>
+    <div><h1>Conciliação Bancária</h1><p>Matching automático · IA</p></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="exportConcXLSX()">Excel</button>
-      <button class="btn btn-gold btn-sm" onclick="runConciliacao()">▶ Conciliar Agora</button>
+      <button class="btn btn-outline btn-sm" onclick="exportConcXLSX()">⬇ Excel</button>
+      <button class="btn btn-gold" onclick="runConciliacao()">▶ Conciliar Agora</button>
     </div>
   </div>
-
-  <!-- Upload -->
-  <div class="grid-2 section-gap" id="conc-upload-area">
+  <div class="grid-2 section-gap">
     <div class="card">
       <div class="card-title">Extrato Bancário</div>
       <div class="upload-zone" onclick="document.getElementById('imp-banco').click()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p style="margin-bottom:6px;font-size:20px">📂</p>
         <p><strong>Selecionar Arquivo</strong><br>OFX · CSV · XLSX</p>
       </div>
       <input type="file" id="imp-banco" accept=".xlsx,.csv,.ofx" style="display:none" onchange="loadBanco(this)"/>
-      <p id="banco-info" style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center"></p>
+      <p id="banco-info" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center"></p>
     </div>
     <div class="card">
       <div class="card-title">Base Gerencial</div>
       <div class="upload-zone" onclick="document.getElementById('imp-gerencial').click()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <p><strong>Selecionar Arquivo</strong><br>Excel do Financeiro · Lançamentos</p>
+        <p style="margin-bottom:6px;font-size:20px">📊</p>
+        <p><strong>Selecionar Arquivo</strong><br>Excel Financeiro · Lançamentos</p>
       </div>
       <input type="file" id="imp-gerencial" accept=".xlsx,.csv" style="display:none" onchange="loadGerencial(this)"/>
-      <p id="gerencial-info" style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center"></p>
+      <p id="gerencial-info" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center"></p>
     </div>
   </div>
-
-  <!-- Stats -->
-  <div class="conc-stats section-gap" id="conc-stats">
-    <div class="conc-stat cs-ok active" onclick="filterConc('all')"><div class="cs-num" id="cs-total">0</div><div class="cs-label">Total</div></div>
-    <div class="conc-stat cs-ok" onclick="filterConc('ok')"><div class="cs-num" id="cs-ok">0</div><div class="cs-label">Conciliados</div></div>
-    <div class="conc-stat cs-diff" onclick="filterConc('diff')"><div class="cs-num" id="cs-diff">0</div><div class="cs-label">Divergências</div></div>
-    <div class="conc-stat cs-dup" onclick="filterConc('dup')"><div class="cs-num" id="cs-dup">0</div><div class="cs-label">Duplicados</div></div>
-    <div class="conc-stat cs-miss" onclick="filterConc('miss')"><div class="cs-num" id="cs-miss">0</div><div class="cs-label">Não Encontrados</div></div>
+  <div class="conc-stats">
+    <div class="conc-stat active" onclick="filterConc('all',this)"><div class="cs-num" id="cs-total">0</div><div class="cs-label">Total</div></div>
+    <div class="conc-stat cs-ok" onclick="filterConc('ok',this)"><div class="cs-num" id="cs-ok">0</div><div class="cs-label">Conciliados</div></div>
+    <div class="conc-stat cs-diff" onclick="filterConc('diff',this)"><div class="cs-num" id="cs-diff">0</div><div class="cs-label">Divergências</div></div>
+    <div class="conc-stat cs-dup" onclick="filterConc('dup',this)"><div class="cs-num" id="cs-dup">0</div><div class="cs-label">Duplicados</div></div>
+    <div class="conc-stat cs-miss" onclick="filterConc('miss',this)"><div class="cs-num" id="cs-miss">0</div><div class="cs-label">Não Encontrados</div></div>
   </div>
-
-  <!-- Results -->
   <div class="card" style="padding:0;overflow:hidden">
-    <table class="data-table" id="conc-table">
+    <table class="data-table">
       <thead><tr><th>Data Banco</th><th>Histórico Banco</th><th style="text-align:right">Valor Banco</th><th>Lançamento Gerencial</th><th style="text-align:right">Valor Gerencial</th><th>Score</th><th>Status</th><th>Ação</th></tr></thead>
       <tbody id="tbody-conc"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">Importe os arquivos e clique em "Conciliar Agora"</td></tr></tbody>
     </table>
   </div>
 </section>
 
-<!-- ═══════════════════════════════ RELATÓRIOS ═══════════════════════════════ -->
+<!-- ═══ RELATÓRIOS ═══ -->
 <section class="screen" id="screen-relatorios">
   <div class="page-header">
-    <div><h1>Relatórios</h1><p>Exportação em Excel e PDF</p></div>
+    <div><h1>Relatórios</h1><p>Exportação Excel e PDF</p></div>
     <div style="display:flex;gap:8px">
-      <select class="ctrl" id="rel-ano"><option>2026</option><option>2025</option></select>
-      <select class="ctrl" id="rel-mes"><option value="0">Ano completo</option><option value="6">Junho</option><option value="5">Maio</option></select>
+      <select class="ctrl"><option>2026</option><option>2025</option></select>
+      <select class="ctrl"><option>Ano completo</option><option>Junho</option><option>Maio</option></select>
     </div>
   </div>
   <div class="report-grid">
-    <div class="report-card">
-      <h3>Fluxo de Caixa Mensal</h3>
-      <p>Detalhamento dia a dia com totais semanais, receitas e custos por categoria.</p>
-      <div class="report-actions">
-        <button class="btn btn-outline btn-sm" onclick="exportFluxoXLSX()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg> Excel
-        </button>
-        <button class="btn btn-outline btn-sm" onclick="exportFluxoPDF()">PDF</button>
-      </div>
-    </div>
-    <div class="report-card">
-      <h3>Fluxo de Caixa Anual</h3>
-      <p>Visão consolidada Jan–Dez com evolução mensal, caixa inicial e final.</p>
-      <div class="report-actions">
-        <button class="btn btn-outline btn-sm" onclick="exportFCAnoXLSX()">Excel</button>
-        <button class="btn btn-outline btn-sm" onclick="exportFluxoPDF()">PDF</button>
-      </div>
-    </div>
-    <div class="report-card">
-      <h3>DRE Gerencial</h3>
-      <p>Demonstração de Resultado do Exercício com centros de custo e comparativo.</p>
-      <div class="report-actions">
-        <button class="btn btn-outline btn-sm" onclick="exportGenXLSX('dre')">Excel</button>
-        <button class="btn btn-outline btn-sm">PDF</button>
-      </div>
-    </div>
-    <div class="report-card">
-      <h3>Conciliação Bancária</h3>
-      <p>Relatório de divergências, itens conciliados e não encontrados por período.</p>
-      <div class="report-actions">
-        <button class="btn btn-outline btn-sm" onclick="exportConcXLSX()">Excel</button>
-        <button class="btn btn-outline btn-sm">PDF</button>
-      </div>
-    </div>
-    <div class="report-card">
-      <h3>Lançamentos do Período</h3>
-      <p>Listagem completa de lançamentos com filtros por conta e centro de custo.</p>
-      <div class="report-actions">
-        <button class="btn btn-outline btn-sm" onclick="exportLancXLSX()">Excel</button>
-        <button class="btn btn-outline btn-sm">PDF</button>
-      </div>
-    </div>
-    <div class="report-card">
-      <h3>Mútuo e Investimentos</h3>
-      <p>Movimentações de mútuo, compras de gado, genética e infraestrutura.</p>
-      <div class="report-actions">
-        <button class="btn btn-outline btn-sm" onclick="exportGenXLSX('mutuo')">Excel</button>
-        <button class="btn btn-outline btn-sm">PDF</button>
-      </div>
-    </div>
+    <div class="report-card"><h3>Fluxo de Caixa Mensal</h3><p>Detalhamento dia a dia com totais semanais, receitas e custos por categoria.</p><div class="report-actions"><button class="btn btn-outline btn-sm" onclick="exportFluxoXLSX()">⬇ Excel</button><button class="btn btn-outline btn-sm" onclick="window.print()">⬇ PDF</button></div></div>
+    <div class="report-card"><h3>Fluxo de Caixa Anual</h3><p>Visão consolidada Jan–Dez com evolução mensal, caixa inicial e final.</p><div class="report-actions"><button class="btn btn-outline btn-sm" onclick="exportFCAnoXLSX()">⬇ Excel</button><button class="btn btn-outline btn-sm" onclick="window.print()">⬇ PDF</button></div></div>
+    <div class="report-card"><h3>DRE Gerencial</h3><p>Demonstração de Resultado com centros de custo e comparativo mensal.</p><div class="report-actions"><button class="btn btn-outline btn-sm" onclick="exportGenXLSX('dre')">⬇ Excel</button><button class="btn btn-outline btn-sm">⬇ PDF</button></div></div>
+    <div class="report-card"><h3>Conciliação Bancária</h3><p>Relatório de divergências, itens conciliados e não encontrados por período.</p><div class="report-actions"><button class="btn btn-outline btn-sm" onclick="exportConcXLSX()">⬇ Excel</button><button class="btn btn-outline btn-sm">⬇ PDF</button></div></div>
+    <div class="report-card"><h3>Lançamentos do Período</h3><p>Listagem completa de lançamentos com filtros por conta e centro de custo.</p><div class="report-actions"><button class="btn btn-outline btn-sm" onclick="exportLancXLSX()">⬇ Excel</button><button class="btn btn-outline btn-sm">⬇ PDF</button></div></div>
+    <div class="report-card"><h3>Mútuo e Investimentos</h3><p>Movimentações de mútuo, compras de gado, genética e infraestrutura.</p><div class="report-actions"><button class="btn btn-outline btn-sm" onclick="exportGenXLSX('mutuo')">⬇ Excel</button><button class="btn btn-outline btn-sm">⬇ PDF</button></div></div>
   </div>
 </section>
 
-<!-- ═══════════════════════════════ PLANO DE CONTAS ═══════════════════════════════ -->
+<!-- ═══ PLANO DE CONTAS ═══ -->
 <section class="screen" id="screen-planocontas">
-  <div class="page-header">
-    <div><h1>Plano de Contas</h1><p>Estrutura de contas do sistema</p></div>
-    <button class="btn btn-primary btn-sm">+ Nova Conta</button>
-  </div>
+  <div class="page-header"><div><h1>Plano de Contas</h1></div><button class="btn btn-primary btn-sm">+ Nova Conta</button></div>
   <div class="card" style="padding:0;overflow:hidden">
-    <table class="pc-table" id="pc-table">
+    <table class="data-table" id="pc-table">
       <thead><tr><th>Código</th><th>Descrição</th><th>Tipo</th><th>Grupo</th></tr></thead>
       <tbody id="tbody-pc"></tbody>
     </table>
   </div>
 </section>
 
-<!-- ═══════════════════════════════ CONTAS BANCÁRIAS ═══════════════════════════════ -->
+<!-- ═══ CONTAS BANCÁRIAS ═══ -->
 <section class="screen" id="screen-bancos">
-  <div class="page-header">
-    <div><h1>Contas Bancárias</h1><p>Saldos e movimentações por conta</p></div>
-    <button class="btn btn-primary btn-sm">+ Nova Conta</button>
-  </div>
+  <div class="page-header"><div><h1>Contas Bancárias</h1></div><button class="btn btn-primary btn-sm">+ Nova Conta</button></div>
   <div class="grid-3" id="bancos-grid"></div>
 </section>
 
 </main>
 
-<!-- ═══ MODAL LANÇAMENTO ═══ -->
+<!-- MODAL LANÇAMENTO -->
 <div class="modal-backdrop" id="modal-lancamento">
   <div class="modal">
     <h2>Novo Lançamento</h2>
     <div class="form-grid">
       <div class="form-row"><label>Data</label><input type="date" id="f-data"/></div>
-      <div class="form-row"><label>Tipo</label>
-        <select id="f-tipo-lanc">
-          <option value="R">Receita</option><option value="D">Despesa</option>
-          <option value="I">Investimento</option><option value="M">Mútuo</option>
-        </select>
-      </div>
+      <div class="form-row"><label>Tipo</label><select id="f-tipo-lanc"><option value="R">Receita</option><option value="D">Despesa</option><option value="I">Investimento</option><option value="M">Mútuo</option></select></div>
     </div>
     <div class="form-row"><label>Descrição</label><input type="text" id="f-desc" placeholder="Descrição do lançamento"/></div>
     <div class="form-grid">
       <div class="form-row"><label>Conta</label>
         <select id="f-conta-lanc">
           <option>Gado de Corte</option><option>Gado P.O</option><option>Confinamento</option>
-          <option>Arrendamento</option><option>Venda de Cavalos</option>
+          <option>Arrendamento</option><option>Venda de Cavalos</option><option>Outros Produtos</option>
           <option>(-) Impostos e taxas</option><option>(-) Custo Zootécnico (Pastagem)</option>
           <option>(-) Custo Zootécnico (Vet.)</option><option>(-) Custo Veículos e Máquinas</option>
           <option>(-) Conservação de Bens</option><option>(-) Custo Pessoal</option>
           <option>(-) Despesas Administrativas</option><option>(-) Compra de Gado</option>
           <option>(-) Compra de Equinos</option><option>(-) Compra de Genética</option>
           <option>(-) Infraestrutura</option><option>(-) Compra de Máquinas</option>
-          <option>(+/-) Mútuo</option><option>(-) Frigorífico</option><option>Outros Produtos</option>
+          <option>(+/-) Mútuo</option><option>(-) Frigorífico</option>
         </select>
       </div>
       <div class="form-row"><label>Centro de Custo</label>
@@ -535,411 +447,483 @@ select.ctrl:focus{border-color:var(--g3)}
       </div>
     </div>
     <div class="form-grid">
-      <div class="form-row"><label>Valor (R$)</label><input type="number" id="f-valor" step="0.01" placeholder="0,00"/></div>
-      <div class="form-row"><label>Banco</label>
-        <select id="f-banco-lanc"><option>Sicredi</option><option>Banco do Brasil</option><option>Santander</option><option>Caixa</option><option>Bradesco</option></select>
-      </div>
+      <div class="form-row"><label>Valor (R$)</label><input type="number" id="f-valor" step="0.01" min="0" placeholder="0,00"/></div>
+      <div class="form-row"><label>Banco</label><select id="f-banco-lanc"><option>Sicredi</option><option>Banco do Brasil</option><option>Santander</option><option>Caixa</option><option>Bradesco</option></select></div>
     </div>
     <div class="form-row"><label>Observação</label><textarea id="f-obs" rows="2" placeholder="Opcional…"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-lancamento')">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarLancamento()">Salvar Lançamento</button>
+      <button class="btn btn-primary" onclick="salvarLancamento()">Salvar</button>
     </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
-// DATA MODEL
-// ═══════════════════════════════════════════════
-const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+// ══════════════════════════════════════════════════
+// CONSTANTES E MODELO DE DADOS
+// ══════════════════════════════════════════════════
+const MESES     = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_FULL= ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 const ROWS = [
-  {id:'sec_rec',  label:'RECEITA BRUTA',          type:'section', group:'rec'},
-  {id:'gado_corte', label:'Gado de Corte',         type:'receita', group:'rec'},
-  {id:'gado_po',   label:'Gado P.O',               type:'receita', group:'rec'},
-  {id:'confinamento', label:'Confinamento',         type:'receita', group:'rec'},
-  {id:'arrendamento', label:'Arrendamento',         type:'receita', group:'rec'},
-  {id:'cavalos',   label:'Venda de Cavalos',        type:'receita', group:'rec'},
-  {id:'outros_prod',label:'Outros Produtos',        type:'receita', group:'rec'},
-  {id:'sec_cust',  label:'CUSTOS E DESPESAS FIXAS',type:'section', group:'cust'},
-  {id:'impostos',  label:'(-) Impostos e taxas sobre venda', type:'custo', group:'cust'},
-  {id:'zoo_past',  label:'(-) Custo Zootécnico (Pastagem/Insumo)', type:'custo', group:'cust'},
-  {id:'zoo_vet',   label:'(-) Custo Zootécnico (Vet./Médico)', type:'custo', group:'cust'},
-  {id:'veiculos',  label:'(-) Custo Veículos e Máquinas', type:'custo', group:'cust'},
-  {id:'conserv',   label:'(-) Conservação de Bens e Instalações', type:'custo', group:'cust'},
-  {id:'pessoal',   label:'(-) Custo Pessoal',      type:'custo', group:'cust'},
-  {id:'admin',     label:'(-) Despesas Administrativas', type:'custo', group:'cust'},
-  {id:'res_oper',  label:'= RESULTADO OPERACIONAL',type:'subtotal', group:'cust'},
-  {id:'sec_inv',   label:'INVESTIMENTOS',           type:'section', group:'inv'},
-  {id:'comp_gado', label:'(-) Compra de Gado',     type:'invest', group:'inv'},
-  {id:'comp_equino',label:'(-) Compra de Equinos', type:'invest', group:'inv'},
-  {id:'comp_gen',  label:'(-) Compra de Genética', type:'invest', group:'inv'},
-  {id:'infra',     label:'(-) Infraestrutura / Benfeitorias', type:'invest', group:'inv'},
-  {id:'imovel',    label:'(+/-) Imóvel',            type:'invest', group:'inv'},
-  {id:'maquinas',  label:'(-) Compra de Máquinas', type:'invest', group:'inv'},
-  {id:'irrigacao', label:'(-) Irrigação Pastagens', type:'invest', group:'inv'},
-  {id:'adiant',    label:'(+/-) Adiantamentos',    type:'invest', group:'inv'},
-  {id:'inv_outros',label:'(-) Investimentos Adicionais', type:'invest', group:'inv'},
-  {id:'res_faz',   label:'= RESULTADO FAZENDA',    type:'subtotal', group:'inv'},
-  {id:'sec_mov',   label:'OUTRAS MOVIMENTAÇÕES',   type:'section', group:'mov'},
-  {id:'eventos',   label:'(-) Eventos Comerciais', type:'mov', group:'mov'},
-  {id:'mutuo_in',  label:'(+) Mútuo Entrada',      type:'mov', group:'mov'},
-  {id:'mutuo_out', label:'(-) Mútuo Saída',        type:'mov', group:'mov'},
-  {id:'mutuo_dalide_out',label:'(-) Mútuo – Dalide', type:'mov', group:'mov'},
-  {id:'mutuo_dalide_in', label:'(+) Mútuo Dalide', type:'mov', group:'mov'},
-  {id:'mutuo_sant_in',   label:'(+) Mútuo Santander', type:'mov', group:'mov'},
-  {id:'mutuo_sant_out',  label:'(-) Mútuo Santander', type:'mov', group:'mov'},
-  {id:'mutuo_gen',label:'Mútuo Saída Genética',    type:'mov', group:'mov'},
-  {id:'frig',      label:'(-) Frigorífico',        type:'mov', group:'mov'},
-  {id:'sec_caixa', label:'GERAÇÃO DE CAIXA FINANCEIRO', type:'section', group:'caixa'},
-  {id:'cx_inicial',label:'     Caixa Inicial',     type:'caixa', group:'caixa'},
-  {id:'cx_final',  label:'     Caixa Final',       type:'caixa', group:'caixa'},
+  {id:'sec_rec',    label:'RECEITA BRUTA',                       type:'section'},
+  {id:'gado_corte', label:'Gado de Corte',                       type:'receita'},
+  {id:'gado_po',    label:'Gado P.O',                            type:'receita'},
+  {id:'confinamento',label:'Confinamento',                       type:'receita'},
+  {id:'arrendamento',label:'Arrendamento',                       type:'receita'},
+  {id:'cavalos',    label:'Venda de Cavalos',                    type:'receita'},
+  {id:'outros_prod',label:'Outros Produtos',                     type:'receita'},
+  {id:'sec_cust',   label:'CUSTOS E DESPESAS FIXAS',             type:'section'},
+  {id:'impostos',   label:'(-) Impostos e taxas sobre venda',    type:'custo'},
+  {id:'zoo_past',   label:'(-) Custo Zootécnico (Pastagem)',     type:'custo'},
+  {id:'zoo_vet',    label:'(-) Custo Zootécnico (Vet./Médico)',  type:'custo'},
+  {id:'veiculos',   label:'(-) Custo Veículos e Máquinas',       type:'custo'},
+  {id:'conserv',    label:'(-) Conservação de Bens',             type:'custo'},
+  {id:'pessoal',    label:'(-) Custo Pessoal',                   type:'custo'},
+  {id:'admin',      label:'(-) Despesas Administrativas',        type:'custo'},
+  {id:'res_oper',   label:'= RESULTADO OPERACIONAL',             type:'subtotal'},
+  {id:'sec_inv',    label:'INVESTIMENTOS',                       type:'section'},
+  {id:'comp_gado',  label:'(-) Compra de Gado',                  type:'invest'},
+  {id:'comp_equino',label:'(-) Compra de Equinos',               type:'invest'},
+  {id:'comp_gen',   label:'(-) Compra de Genética',              type:'invest'},
+  {id:'infra',      label:'(-) Infraestrutura / Benfeitorias',   type:'invest'},
+  {id:'imovel',     label:'(+/-) Imóvel',                        type:'invest'},
+  {id:'maquinas',   label:'(-) Compra de Máquinas',              type:'invest'},
+  {id:'irrigacao',  label:'(-) Irrigação Pastagens',             type:'invest'},
+  {id:'adiant',     label:'(+/-) Adiantamentos',                 type:'invest'},
+  {id:'inv_outros', label:'(-) Investimentos Adicionais',        type:'invest'},
+  {id:'res_faz',    label:'= RESULTADO FAZENDA',                 type:'subtotal'},
+  {id:'sec_mov',    label:'OUTRAS MOVIMENTAÇÕES',                type:'section'},
+  {id:'eventos',    label:'(-) Eventos Comerciais',              type:'mov'},
+  {id:'mutuo_in',   label:'(+) Mútuo Entrada',                   type:'mov'},
+  {id:'mutuo_out',  label:'(-) Mútuo Saída',                     type:'mov'},
+  {id:'mutuo_dalide_out',label:'(-) Mútuo – Dalide',             type:'mov'},
+  {id:'mutuo_dalide_in', label:'(+) Mútuo Dalide',               type:'mov'},
+  {id:'mutuo_sant_in',   label:'(+) Mútuo Santander',            type:'mov'},
+  {id:'mutuo_sant_out',  label:'(-) Mútuo Santander',            type:'mov'},
+  {id:'mutuo_gen',  label:'Mútuo Saída Genética',               type:'mov'},
+  {id:'frig',       label:'(-) Frigorífico',                     type:'mov'},
+  {id:'sec_cx',     label:'GERAÇÃO DE CAIXA FINANCEIRO',         type:'section'},
+  {id:'cx_inicial', label:'     Caixa Inicial',                  type:'caixa'},
+  {id:'cx_final',   label:'     Caixa Final',                    type:'caixa'},
 ];
 
-// In-memory data: data[year][month][rowId][day] = value
-// For annual: data[year]['ano'][rowId][month] = value
-let appData = JSON.parse(localStorage.getItem('hrData') || '{}');
-let lancamentos = JSON.parse(localStorage.getItem('hrLanc') || '[]');
-let concData = {banco:[], gerencial:[], results:[]};
-let charts = {};
+const REC_IDS  = ['gado_corte','gado_po','confinamento','arrendamento','cavalos','outros_prod'];
+const CUST_IDS = ['impostos','zoo_past','zoo_vet','veiculos','conserv','pessoal','admin'];
+const INV_IDS  = ['comp_gado','comp_equino','comp_gen','infra','imovel','maquinas','irrigacao','adiant','inv_outros'];
 
-function save(){
-  localStorage.setItem('hrData', JSON.stringify(appData));
-  localStorage.setItem('hrLanc', JSON.stringify(lancamentos));
+// ══════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════════
+let sb        = null;   // Supabase client
+let online    = false;
+let lancamentos = [];
+let fluxoCache  = {};   // key: "year-month-rowId-day"
+let concData    = {banco:[], gerencial:[], results:[]};
+let charts      = {};
+let saveTimer   = null;
+
+// ══════════════════════════════════════════════════
+// SUPABASE INIT
+// ══════════════════════════════════════════════════
+async function initSupabase() {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.url && cfg.key) {
+      const { createClient } = supabase;
+      sb = createClient(cfg.url, cfg.key);
+      online = true;
+      setSyncStatus('ok','● Nuvem');
+      document.getElementById('sb-mode').textContent = '● Nuvem ativa';
+      document.getElementById('sb-mode').style.color = 'var(--gold2)';
+    } else {
+      setSyncStatus('offline','● Modo local');
+    }
+  } catch(e) {
+    setSyncStatus('offline','● Modo local');
+  }
 }
 
-// ═══════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════
-function goTo(id, el){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('screen-'+id).classList.add('active');
-  if(el) el.classList.add('active');
-  document.getElementById('topbar-title').textContent = el ? el.textContent.trim() : '';
-  if(id==='fluxo') renderFCMes();
-  if(id==='lancamentos') renderLanc();
-  if(id==='planocontas') renderPC();
-  if(id==='bancos') renderBancos();
-  if(id==='dashboard') renderDash();
+function setSyncStatus(cls, txt) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + cls;
+  el.textContent = txt;
 }
+function setSaving() { setSyncStatus('saving','⏳ Salvando…'); }
+function setOk()     { setSyncStatus('ok','● Salvo na nuvem'); }
 
-function openModal(id){document.getElementById(id).classList.add('open')}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
-
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // HELPERS
-// ═══════════════════════════════════════════════
-function fmt(v){
-  if(!v||v===0) return '';
+// ══════════════════════════════════════════════════
+function fmt(v) {
+  if (!v && v !== 0) return '';
   const n = parseFloat(v);
-  return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if (n === 0) return '';
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
-function fmtFull(v){
-  const n = parseFloat(v)||0;
-  return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function fmtFull(v) {
+  const n = parseFloat(v) || 0;
+  return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
-function daysInMonth(y,m){return new Date(y,m,0).getDate()}
-function getVal(year,month,rowId,col){
-  return ((appData[year]||{})[month]||{})[rowId]?.[col] || 0;
-}
-function setVal(year,month,rowId,col,val){
-  if(!appData[year]) appData[year]={};
-  if(!appData[year][month]) appData[year][month]={};
-  if(!appData[year][month][rowId]) appData[year][month][rowId]={};
-  appData[year][month][rowId][col]=parseFloat(val)||0;
-  save();
-}
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 
-// ═══════════════════════════════════════════════
-// FLUXO DE CAIXA – MÊS
-// ═══════════════════════════════════════════════
-function switchFC(mode){
-  document.getElementById('fc-mes-panel').style.display = mode==='mes'?'':'none';
-  document.getElementById('fc-ano-panel').style.display = mode==='ano'?'':'none';
-  document.getElementById('tab-mes').classList.toggle('active', mode==='mes');
-  document.getElementById('tab-ano').classList.toggle('active', mode==='ano');
-  if(mode==='ano') renderFCAno();
+function getVal(year, month, rowId, day) {
+  const key = `${year}-${month}-${rowId}-${day}`;
+  return fluxoCache[key] || 0;
 }
-
-function weekOf(day){ return Math.ceil(day/7); }
-
-function renderFCMes(){
-  const year = parseInt(document.getElementById('sel-ano-mes').value);
-  const month = parseInt(document.getElementById('sel-mes').value);
-  const days = daysInMonth(year, month);
-  const mesName = MESES_FULL[month-1]+' '+year;
-  document.getElementById('fc-mes-info').textContent = mesName+' · '+days+' dias';
-
-  // Build week groups: [1-7, 8-14, 15-21, 22-end]
-  const weeks = [];
-  for(let w=0;w<4;w++){
-    const start = w*7+1;
-    const end = Math.min(start+6, days);
-    if(start>days) break;
-    weeks.push({start,end,label:(w+1)+'ª SEM'});
+function setVal(year, month, rowId, day, val) {
+  const key = `${year}-${month}-${rowId}-${day}`;
+  fluxoCache[key] = val;
+  if (!online) {
+    localStorage.setItem('hrFluxo', JSON.stringify(fluxoCache));
   }
-  // Extra days if month has 29-31
-  if(days===29||days===30||days===31){
-    // week 4 already handles 22-28, days 29-31 go to 5ª week or extend 4th
-    // already handled by Math.min above
-  }
-
-  const tbl = document.getElementById('fc-mes-table');
-  let html = '<thead>';
-
-  // Header row 1: title
-  html += `<tr><th style="background:var(--g1);font-size:13px;letter-spacing:.05em" colspan="${2+weeks.length*8}">FLUXO DE CAIXA MENSAL · ${mesName.toUpperCase()}</th></tr>`;
-
-  // Header row 2: TOTAL + weeks + days
-  html += '<tr>';
-  html += `<th class="th-total" style="text-align:left">DESCRIÇÃO</th>`;
-  html += `<th class="th-total">TOTAL</th>`;
-  for(const wk of weeks){
-    for(let d=wk.start;d<=wk.end;d++){
-      html += `<th>${d}</th>`;
-    }
-    html += `<th class="th-week">${wk.label}</th>`;
-  }
-  html += '</tr></thead><tbody>';
-
-  // Data rows
-  for(const row of ROWS){
-    if(row.type==='section'){
-      const cls = row.group==='rec'?'':row.group==='cust'?'':row.group==='inv'?'':row.group==='mov'?'':'';
-      html += `<tr class="row-section"><td colspan="${2+weeks.length*8}">${row.label}</td></tr>`;
-      continue;
-    }
-
-    const rowClass = {receita:'row-receita',custo:'row-custo',invest:'row-invest',mov:'row-mov',subtotal:'row-subtotal',caixa:'row-caixa'}[row.type]||'';
-
-    let rowTotal = 0;
-    let dayVals = {};
-    for(let d=1;d<=days;d++){
-      dayVals[d] = getVal(year,month,row.id,d);
-      rowTotal += dayVals[d];
-    }
-
-    // For subtotals compute from component rows
-    if(row.type==='subtotal'){
-      rowTotal = computeSubtotal(row.id, year, month, days);
-      for(let d=1;d<=days;d++) dayVals[d] = computeSubtotalDay(row.id, year, month, d);
-    }
-
-    const totalClass = rowTotal<0?'val-neg':rowTotal>0?'val-pos':'';
-    html += `<tr class="${rowClass}" data-row="${row.id}">`;
-    html += `<td>${row.label}</td>`;
-    html += `<td class="${totalClass} col-week fw600">${fmt(rowTotal)}</td>`;
-
-    for(const wk of weeks){
-      let wkSum = 0;
-      for(let d=wk.start;d<=wk.end;d++){
-        const v = dayVals[d];
-        wkSum += v;
-        const canEdit = row.type!=='section'&&row.type!=='subtotal'&&row.type!=='caixa';
-        const cellClass = v<0?'val-neg':v>0?'val-pos':'';
-        if(canEdit){
-          html += `<td class="${cellClass}"><input type="text" style="width:64px;border:none;background:transparent;text-align:right;font-size:11px;color:inherit;outline:none" value="${fmt(v)}" onfocus="this.select()" onblur="saveCell(this,${year},${month},'${row.id}',${d})" onkeydown="if(event.key==='Enter')this.blur()"/></td>`;
-        } else {
-          html += `<td class="${cellClass}">${fmt(v)}</td>`;
-        }
-      }
-      const wkClass = wkSum<0?'val-neg':wkSum>0?'val-pos':'';
-      html += `<td class="col-week ${wkClass}">${fmt(wkSum)}</td>`;
-    }
-    html += '</tr>';
-  }
-
-  html += '</tbody>';
-  tbl.innerHTML = html;
 }
 
-function saveCell(inp, year, month, rowId, day){
-  const raw = inp.value.replace(/\./g,'').replace(',','.');
-  const val = parseFloat(raw)||0;
-  setVal(year,month,rowId,day,val);
-  inp.value = fmt(val);
-  inp.style.color = val<0?'var(--danger)':val>0?'var(--ok)':'';
-  renderFCMes();
-}
-
-function computeSubtotal(id, year, month, days){
-  let total = 0;
-  const recIds = ['gado_corte','gado_po','confinamento','arrendamento','cavalos','outros_prod'];
-  const custIds = ['impostos','zoo_past','zoo_vet','veiculos','conserv','pessoal','admin'];
-  const invIds = ['comp_gado','comp_equino','comp_gen','infra','imovel','maquinas','irrigacao','adiant','inv_outros'];
-  if(id==='res_oper'){
-    for(const r of recIds) for(let d=1;d<=days;d++) total += getVal(year,month,r,d);
-    for(const r of custIds) for(let d=1;d<=days;d++) total -= Math.abs(getVal(year,month,r,d));
-  } else if(id==='res_faz'){
-    total = computeSubtotal('res_oper',year,month,days);
-    for(const r of invIds) for(let d=1;d<=days;d++) total -= Math.abs(getVal(year,month,r,d));
+function computeSubtotal(id, year, month, days) {
+  let v = 0;
+  if (id === 'res_oper') {
+    for (const r of REC_IDS)  for (let d=1;d<=days;d++) v += getVal(year,month,r,d);
+    for (const r of CUST_IDS) for (let d=1;d<=days;d++) v -= Math.abs(getVal(year,month,r,d));
+  } else if (id === 'res_faz') {
+    v = computeSubtotal('res_oper', year, month, days);
+    for (const r of INV_IDS) for (let d=1;d<=days;d++) v -= Math.abs(getVal(year,month,r,d));
   }
-  return total;
+  return v;
 }
-function computeSubtotalDay(id, year, month, day){
-  const recIds = ['gado_corte','gado_po','confinamento','arrendamento','cavalos','outros_prod'];
-  const custIds = ['impostos','zoo_past','zoo_vet','veiculos','conserv','pessoal','admin'];
-  const invIds = ['comp_gado','comp_equino','comp_gen','infra','imovel','maquinas','irrigacao','adiant','inv_outros'];
-  let v=0;
-  if(id==='res_oper'){
-    for(const r of recIds) v += getVal(year,month,r,day);
-    for(const r of custIds) v -= Math.abs(getVal(year,month,r,day));
-  } else if(id==='res_faz'){
-    v = computeSubtotalDay('res_oper',year,month,day);
-    for(const r of invIds) v -= Math.abs(getVal(year,month,r,day));
+function computeSubtotalDay(id, year, month, day) {
+  let v = 0;
+  if (id === 'res_oper') {
+    for (const r of REC_IDS)  v += getVal(year,month,r,day);
+    for (const r of CUST_IDS) v -= Math.abs(getVal(year,month,r,day));
+  } else if (id === 'res_faz') {
+    v = computeSubtotalDay('res_oper', year, month, day);
+    for (const r of INV_IDS) v -= Math.abs(getVal(year,month,r,day));
   }
   return v;
 }
 
-// ═══════════════════════════════════════════════
-// FLUXO DE CAIXA – ANO
-// ═══════════════════════════════════════════════
-function renderFCAno(){
-  const year = parseInt(document.getElementById('sel-ano').value);
-  const tbl = document.getElementById('fc-ano-table');
-  let html = '<thead>';
-  html += `<tr><th style="background:var(--g1);font-size:13px;letter-spacing:.05em" colspan="15">FLUXO DE CAIXA DIRETO · ANUAL ${year}</th></tr>`;
-  html += '<tr>';
-  html += `<th class="th-total" style="text-align:left">DESCRIÇÃO</th>`;
-  html += `<th class="th-total">TOTAL ANO</th>`;
-  for(const m of MESES) html += `<th>${m}</th>`;
-  html += '</tr></thead><tbody>';
+// ══════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════════
+function goTo(id, el) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('topbar-title').textContent = (el ? el.textContent.trim() : '');
+  if (id === 'dashboard')   renderDash();
+  if (id === 'fluxo')       renderFCMes();
+  if (id === 'lancamentos') renderLanc();
+  if (id === 'planocontas') renderPC();
+  if (id === 'bancos')      renderBancos();
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(m =>
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
+);
 
-  for(const row of ROWS){
-    if(row.type==='section'){
-      html += `<tr class="row-section"><td colspan="15">${row.label}</td></tr>`;
-      continue;
-    }
-    const rowClass = {receita:'row-receita',custo:'row-custo',invest:'row-invest',mov:'row-mov',subtotal:'row-subtotal',caixa:'row-caixa'}[row.type]||'';
-    let yrTotal = 0;
-    let mVals = [];
-    for(let m=1;m<=12;m++){
-      let v = 0;
-      if(row.type==='subtotal'){
-        v = computeSubtotal(row.id,year,m,daysInMonth(year,m));
-      } else {
-        const days = daysInMonth(year,m);
-        for(let d=1;d<=days;d++) v += getVal(year,m,row.id,d);
-      }
-      mVals.push(v);
-      yrTotal += v;
-    }
-    const totalClass = yrTotal<0?'val-neg':yrTotal>0?'val-pos':'';
-    html += `<tr class="${rowClass}"><td>${row.label}</td><td class="${totalClass} col-week fw600">${fmt(yrTotal)}</td>`;
-    for(let m=0;m<12;m++){
-      const v = mVals[m];
-      const cls = v<0?'val-neg':v>0?'val-pos':'';
-      html += `<td class="${cls}">${fmt(v)}</td>`;
-    }
-    html += '</tr>';
+// ══════════════════════════════════════════════════
+// LANÇAMENTOS – CRUD
+// ══════════════════════════════════════════════════
+async function loadLancamentos() {
+  if (online) {
+    const { data } = await sb.from('lancamentos').select('*').order('data', {ascending:false});
+    lancamentos = (data || []).map(r => ({
+      id: r.id, data: r.data, desc: r.descricao, conta: r.conta,
+      cc: r.centro_custo, tipo: r.tipo, banco: r.banco,
+      valor: parseFloat(r.valor)||0, obs: r.obs, status: r.status
+    }));
+  } else {
+    lancamentos = JSON.parse(localStorage.getItem('hrLanc') || '[]');
   }
-
-  // Summary rows
-  html += '<tr class="row-section"><td colspan="15">RESUMO ANUAL</td></tr>';
-  const summaries = [
-    {label:'Total Receita', ids:['gado_corte','gado_po','confinamento','arrendamento','cavalos','outros_prod'], sign:1},
-    {label:'Total Custos e Despesas', ids:['impostos','zoo_past','zoo_vet','veiculos','conserv','pessoal','admin'], sign:-1},
-    {label:'Total Investimentos', ids:['comp_gado','comp_equino','comp_gen','infra','imovel','maquinas','irrigacao','adiant','inv_outros'], sign:-1},
-  ];
-  for(const s of summaries){
-    let yrT=0, ms=[];
-    for(let m=1;m<=12;m++){
-      let v=0;
-      const days=daysInMonth(year,m);
-      for(const rid of s.ids) for(let d=1;d<=days;d++) v+=getVal(year,m,rid,d);
-      v=v*s.sign; ms.push(v); yrT+=v;
-    }
-    const cls2=yrT<0?'val-neg':yrT>0?'val-pos':'';
-    html+=`<tr class="row-summary"><td style="font-weight:600">${s.label}</td><td class="${cls2} fw600">${fmt(yrT)}</td>`;
-    for(const v of ms){const c=v<0?'val-neg':v>0?'val-pos':'';html+=`<td class="${c}">${fmt(v)}</td>`;}
-    html+='</tr>';
-  }
-
-  html += '</tbody>';
-  tbl.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════
-// LANÇAMENTOS
-// ═══════════════════════════════════════════════
-function salvarLancamento(){
+async function salvarLancamento() {
   const lanc = {
-    id: Date.now(),
-    data: document.getElementById('f-data').value || new Date().toISOString().slice(0,10),
-    desc: document.getElementById('f-desc').value,
+    data:  document.getElementById('f-data').value || new Date().toISOString().slice(0,10),
+    desc:  document.getElementById('f-desc').value.trim(),
     conta: document.getElementById('f-conta-lanc').value,
-    cc: document.getElementById('f-cc').value,
-    tipo: document.getElementById('f-tipo-lanc').value,
+    cc:    document.getElementById('f-cc').value,
+    tipo:  document.getElementById('f-tipo-lanc').value,
     banco: document.getElementById('f-banco-lanc').value,
-    valor: parseFloat(document.getElementById('f-valor').value)||0,
-    obs: document.getElementById('f-obs').value,
-    status: 'pendente'
+    valor: parseFloat(document.getElementById('f-valor').value) || 0,
+    obs:   document.getElementById('f-obs').value,
+    status:'pendente'
   };
-  if(!lanc.desc || !lanc.valor){ alert('Preencha descrição e valor.'); return; }
+  if (!lanc.desc || !lanc.valor) { alert('Preencha descrição e valor.'); return; }
 
-  // Also write to fluxo data
+  setSaving();
+  if (online) {
+    const { data, error } = await sb.from('lancamentos').insert([{
+      data: lanc.data, descricao: lanc.desc, conta: lanc.conta,
+      centro_custo: lanc.cc, tipo: lanc.tipo, banco: lanc.banco,
+      valor: lanc.valor, obs: lanc.obs, status: lanc.status,
+      ano: parseInt(lanc.data.slice(0,4)),
+      mes: parseInt(lanc.data.slice(5,7)),
+      dia: parseInt(lanc.data.slice(8,10))
+    }]).select();
+    if (!error && data) {
+      const r = data[0];
+      lancamentos.unshift({id:r.id, data:r.data, desc:r.descricao, conta:r.conta, cc:r.centro_custo, tipo:r.tipo, banco:r.banco, valor:parseFloat(r.valor)||0, obs:r.obs, status:r.status});
+    }
+    setOk();
+  } else {
+    lanc.id = Date.now();
+    lancamentos.unshift(lanc);
+    localStorage.setItem('hrLanc', JSON.stringify(lancamentos));
+    setSyncStatus('offline','● Modo local');
+  }
+
+  // Atualizar fluxo de caixa
   const [y,m,d] = lanc.data.split('-').map(Number);
   const rowMap = {
     'Gado de Corte':'gado_corte','Gado P.O':'gado_po','Confinamento':'confinamento',
     'Arrendamento':'arrendamento','Venda de Cavalos':'cavalos','Outros Produtos':'outros_prod',
-    '(-) Impostos e taxas sobre venda':'impostos','(-) Custo Zootécnico (Pastagem/Insumo)':'zoo_past',
-    '(-) Custo Zootécnico (Vet./Médico)':'zoo_vet','(-) Custo Veículos e Máquinas':'veiculos',
+    '(-) Impostos e taxas':'impostos','(-) Custo Zootécnico (Pastagem)':'zoo_past',
+    '(-) Custo Zootécnico (Vet.)':'zoo_vet','(-) Custo Veículos e Máquinas':'veiculos',
     '(-) Conservação de Bens':'conserv','(-) Custo Pessoal':'pessoal',
     '(-) Despesas Administrativas':'admin','(-) Compra de Gado':'comp_gado',
     '(-) Compra de Equinos':'comp_equino','(-) Compra de Genética':'comp_gen',
-    '(-) Infraestrutura / Benfeitorias':'infra','(-) Compra de Máquinas':'maquinas',
-    '(+/-) Mútuo Entrada':'mutuo_in','(-) Mútuo Saída':'mutuo_out',
-    '(-) Frigorífico':'frig',
+    '(-) Infraestrutura':'infra','(-) Compra de Máquinas':'maquinas',
+    '(+/-) Mútuo':'mutuo_in','(-) Frigorífico':'frig',
   };
   const rid = rowMap[lanc.conta];
-  if(rid) setVal(y,m,rid,d, (getVal(y,m,rid,d)||0)+lanc.valor);
+  if (rid) await saveFluxoCell(y, m, rid, d, (getVal(y,m,rid,d)||0) + lanc.valor);
 
-  lancamentos.unshift(lanc);
-  save();
   closeModal('modal-lancamento');
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-valor').value = '';
   renderLanc();
   renderRecentLanc();
 }
 
-function renderLanc(){
-  const tbody = document.getElementById('tbody-lanc');
-  const tipoF = document.getElementById('f-tipo').value;
-  const mesF  = document.getElementById('f-mes-lanc').value;
-  let rows = lancamentos.filter(l=>{
-    if(tipoF && l.tipo!==tipoF) return false;
-    if(mesF && !l.data.startsWith('2026-'+mesF)&&!l.data.startsWith('2025-'+mesF)) return false;
-    return true;
-  });
-  document.getElementById('lanc-count').textContent = rows.length+' registros';
-  const typeLabel = {R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
-  const typeBadge = {R:'badge-green',D:'badge-red',I:'badge-yellow',M:'badge-blue'};
-  tbody.innerHTML = rows.length ? rows.map(l=>`
-    <tr>
-      <td>${l.data}</td>
-      <td>${l.desc}</td>
-      <td style="font-size:11px">${l.conta}</td>
-      <td style="font-size:11px">${l.cc||'—'}</td>
-      <td><span class="badge ${typeBadge[l.tipo]||'badge-gray'}">${typeLabel[l.tipo]||l.tipo}</span></td>
-      <td style="font-size:11px">${l.banco||'—'}</td>
-      <td class="td-num ${l.tipo==='R'?'color-ok':'color-danger'}">${fmtFull(l.valor)}</td>
-      <td><span class="badge badge-gray">${l.status}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick="delLanc(${l.id})" style="color:var(--danger);border-color:var(--danger)">✕</button></td>
-    </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum lançamento encontrado</td></tr>';
+async function delLanc(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  setSaving();
+  if (online) {
+    await sb.from('lancamentos').delete().eq('id', id);
+    setOk();
+  }
+  lancamentos = lancamentos.filter(l => l.id !== id);
+  if (!online) localStorage.setItem('hrLanc', JSON.stringify(lancamentos));
+  renderLanc();
+  renderRecentLanc();
 }
 
-function filterLanc(){ renderLanc(); }
-function delLanc(id){ lancamentos=lancamentos.filter(l=>l.id!==id); save(); renderLanc(); }
+function renderLanc() {
+  const tipoF = document.getElementById('f-tipo-fil').value;
+  const mesF  = document.getElementById('f-mes-lanc').value;
+  let rows = lancamentos.filter(l => {
+    if (tipoF && l.tipo !== tipoF) return false;
+    if (mesF && !String(l.data).includes('-'+mesF+'-') && !String(l.data).startsWith(mesF+'/')) return false;
+    return true;
+  });
+  document.getElementById('lanc-count').textContent = rows.length + ' registros';
+  const tLbl = {R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
+  const tBdg = {R:'badge-green',D:'badge-red',I:'badge-yellow',M:'badge-blue'};
+  const tbody = document.getElementById('tbody-lanc');
+  tbody.innerHTML = rows.length ? rows.map(l => `
+    <tr>
+      <td>${l.data||'—'}</td>
+      <td>${l.desc}</td>
+      <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis">${l.conta||'—'}</td>
+      <td style="font-size:11px">${l.cc||'—'}</td>
+      <td><span class="badge ${tBdg[l.tipo]||'badge-gray'}">${tLbl[l.tipo]||l.tipo}</span></td>
+      <td style="font-size:11px">${l.banco||'—'}</td>
+      <td class="td-num ${l.tipo==='R'?'color-ok':'color-danger'}">${fmtFull(l.valor)}</td>
+      <td><span class="badge badge-gray">${l.status||'—'}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="delLanc(${l.id})" style="color:var(--danger);border-color:var(--danger);padding:3px 8px">✕</button></td>
+    </tr>`).join('')
+    : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum lançamento encontrado</td></tr>';
+}
 
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// FLUXO DE CAIXA – SALVAR CÉLULA
+// ══════════════════════════════════════════════════
+async function saveFluxoCell(year, month, rowId, day, val) {
+  setVal(year, month, rowId, day, val);
+  if (online) {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      setSaving();
+      await sb.from('fluxo_caixa').upsert(
+        {ano:year, mes:month, dia:day, row_id:rowId, valor:val},
+        {onConflict:'ano,mes,dia,row_id'}
+      );
+      setOk();
+    }, 600);
+  }
+}
+
+async function loadFluxo(year, month) {
+  if (online) {
+    const { data } = await sb.from('fluxo_caixa').select('*').eq('ano',year).eq('mes',month);
+    if (data) {
+      for (const r of data) {
+        const key = `${r.ano}-${r.mes}-${r.row_id}-${r.dia}`;
+        fluxoCache[key] = parseFloat(r.valor)||0;
+      }
+    }
+  } else {
+    const saved = localStorage.getItem('hrFluxo');
+    if (saved) fluxoCache = JSON.parse(saved);
+  }
+}
+
+// ══════════════════════════════════════════════════
+// RENDER FLUXO – MÊS
+// ══════════════════════════════════════════════════
+function switchFC(mode) {
+  document.getElementById('fc-mes-panel').style.display = mode==='mes'?'':'none';
+  document.getElementById('fc-ano-panel').style.display = mode==='ano'?'':'none';
+  document.getElementById('tab-mes').classList.toggle('active', mode==='mes');
+  document.getElementById('tab-ano').classList.toggle('active', mode==='ano');
+  if (mode==='ano') renderFCAno();
+}
+
+async function renderFCMes() {
+  const year  = parseInt(document.getElementById('sel-ano-mes').value);
+  const month = parseInt(document.getElementById('sel-mes').value);
+  await loadFluxo(year, month);
+  const days  = daysInMonth(year, month);
+  const mesName = MESES_FULL[month-1] + ' ' + year;
+  document.getElementById('fc-mes-info').textContent = mesName + ' · ' + days + ' dias';
+
+  // Semanas
+  const weeks = [];
+  for (let w=0; w<5; w++) {
+    const start = w*7+1, end = Math.min(start+6, days);
+    if (start > days) break;
+    weeks.push({start, end, label:(w+1)+'ª Sem'});
+  }
+
+  const tbl = document.getElementById('fc-mes-table');
+  const totalCols = 2 + weeks.reduce((s,wk)=> s+(wk.end-wk.start+2), 0);
+  let html = '<thead>';
+  html += `<tr><th colspan="${totalCols}" style="background:var(--g1);font-size:12px;letter-spacing:.06em;padding:8px">FLUXO DE CAIXA DIRETO · ${mesName.toUpperCase()}</th></tr>`;
+  html += '<tr>';
+  html += `<th class="th-total" style="text-align:left;min-width:210px">DESCRIÇÃO</th>`;
+  html += `<th class="th-total" style="min-width:70px">TOTAL</th>`;
+  for (const wk of weeks) {
+    for (let d=wk.start; d<=wk.end; d++) html += `<th style="min-width:52px">${d}</th>`;
+    html += `<th class="th-week" style="min-width:58px">${wk.label}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  for (const row of ROWS) {
+    if (row.type === 'section') {
+      html += `<tr class="row-section"><td colspan="${totalCols}">${row.label}</td></tr>`;
+      continue;
+    }
+    const rcls = {receita:'row-receita',custo:'row-custo',invest:'row-invest',mov:'row-mov',subtotal:'row-subtotal',caixa:'row-caixa'}[row.type]||'';
+    const editable = !['section','subtotal','caixa'].includes(row.type);
+
+    let rowTotal = 0;
+    const dayV = {};
+    for (let d=1; d<=days; d++) {
+      dayV[d] = row.type==='subtotal' ? computeSubtotalDay(row.id,year,month,d) : getVal(year,month,row.id,d);
+      rowTotal += dayV[d];
+    }
+    if (row.type==='subtotal') rowTotal = computeSubtotal(row.id,year,month,days);
+
+    const tc = rowTotal<0?'val-neg':rowTotal>0?'val-pos':'';
+    html += `<tr class="${rcls}">`;
+    html += `<td>${row.label}</td>`;
+    html += `<td class="col-week fw600 ${tc}">${fmt(rowTotal)}</td>`;
+    for (const wk of weeks) {
+      let wkS = 0;
+      for (let d=wk.start; d<=wk.end; d++) {
+        const v = dayV[d]; wkS += v;
+        const cc = v<0?'val-neg':v>0?'val-pos':'';
+        if (editable) {
+          html += `<td class="${cc}"><input class="fc-input" type="text" value="${fmt(v)}" onfocus="this.select()" onblur="onCellBlur(this,${year},${month},'${row.id}',${d})" onkeydown="if(event.key==='Enter')this.blur()"/></td>`;
+        } else {
+          html += `<td class="${cc}">${fmt(v)}</td>`;
+        }
+      }
+      const wc = wkS<0?'val-neg':wkS>0?'val-pos':'';
+      html += `<td class="col-week ${wc}">${fmt(wkS)}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+function onCellBlur(inp, year, month, rowId, day) {
+  const raw = inp.value.replace(/\./g,'').replace(',','.');
+  const val = parseFloat(raw) || 0;
+  inp.value = fmt(val);
+  inp.style.color = val<0?'var(--danger)':val>0?'var(--ok)':'';
+  saveFluxoCell(year, month, rowId, day, val).then(()=> renderFCMes());
+}
+
+// ══════════════════════════════════════════════════
+// RENDER FLUXO – ANO
+// ══════════════════════════════════════════════════
+async function renderFCAno() {
+  const year = parseInt(document.getElementById('sel-ano').value);
+  // Carregar todos os meses em paralelo
+  await Promise.all(Array.from({length:12},(_,i)=>loadFluxo(year,i+1)));
+
+  const tbl = document.getElementById('fc-ano-table');
+  let html = '<thead>';
+  html += `<tr><th colspan="15" style="background:var(--g1);font-size:12px;letter-spacing:.06em;padding:8px">FLUXO DE CAIXA DIRETO · ANUAL ${year}</th></tr>`;
+  html += '<tr>';
+  html += `<th class="th-total" style="text-align:left;min-width:210px">DESCRIÇÃO</th>`;
+  html += `<th class="th-total">TOTAL ANO</th>`;
+  for (const m of MESES) html += `<th style="min-width:72px">${m}</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (const row of ROWS) {
+    if (row.type==='section') {
+      html += `<tr class="row-section"><td colspan="15">${row.label}</td></tr>`;
+      continue;
+    }
+    const rcls = {receita:'row-receita',custo:'row-custo',invest:'row-invest',mov:'row-mov',subtotal:'row-subtotal',caixa:'row-caixa'}[row.type]||'';
+    let yrTotal=0, mVals=[];
+    for (let m=1;m<=12;m++) {
+      let v=0;
+      const days=daysInMonth(year,m);
+      if (row.type==='subtotal') v=computeSubtotal(row.id,year,m,days);
+      else for(let d=1;d<=days;d++) v+=getVal(year,m,row.id,d);
+      mVals.push(v); yrTotal+=v;
+    }
+    const tc=yrTotal<0?'val-neg':yrTotal>0?'val-pos':'';
+    html+=`<tr class="${rcls}"><td>${row.label}</td><td class="col-week fw600 ${tc}">${fmt(yrTotal)}</td>`;
+    for(const v of mVals){const c=v<0?'val-neg':v>0?'val-pos':'';html+=`<td class="${c}">${fmt(v)}</td>`;}
+    html+='</tr>';
+  }
+
+  // Resumo
+  html += '<tr class="row-section"><td colspan="15">RESUMO · TOTAIS ANUAIS</td></tr>';
+  const sums=[
+    {label:'Total Receita',ids:REC_IDS,sign:1},
+    {label:'Total Custos e Despesas',ids:CUST_IDS,sign:-1},
+    {label:'Total Investimentos',ids:INV_IDS,sign:-1},
+  ];
+  for(const s of sums){
+    let yrT=0,ms=[];
+    for(let m=1;m<=12;m++){
+      let v=0;const days=daysInMonth(year,m);
+      for(const rid of s.ids)for(let d=1;d<=days;d++)v+=getVal(year,m,rid,d);
+      v*=s.sign;ms.push(v);yrT+=v;
+    }
+    const c2=yrT<0?'val-neg':yrT>0?'val-pos':'';
+    html+=`<tr class="row-summary"><td style="font-weight:600;padding-left:12px">${s.label}</td><td class="${c2} fw600">${fmt(yrT)}</td>`;
+    for(const v of ms){const c=v<0?'val-neg':v>0?'val-pos':'';html+=`<td class="${c}">${fmt(v)}</td>`;}
+    html+='</tr>';
+  }
+  html+='</tbody>';
+  tbl.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════
 // CONCILIAÇÃO
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 function loadBanco(inp){
-  const f=inp.files[0]; if(!f) return;
-  document.getElementById('banco-info').textContent = '✓ '+f.name+' carregado';
+  const f=inp.files[0];if(!f)return;
   const reader=new FileReader();
   reader.onload=e=>{
     const wb=XLSX.read(e.target.result,{type:'array'});
@@ -950,7 +934,7 @@ function loadBanco(inp){
   reader.readAsArrayBuffer(f);
 }
 function loadGerencial(inp){
-  const f=inp.files[0]; if(!f) return;
+  const f=inp.files[0];if(!f)return;
   const reader=new FileReader();
   reader.onload=e=>{
     const wb=XLSX.read(e.target.result,{type:'array'});
@@ -960,74 +944,69 @@ function loadGerencial(inp){
   };
   reader.readAsArrayBuffer(f);
 }
-
 function scoreMatch(b,g){
-  let score=0;
+  let s=0;
   const bv=parseFloat(b.Valor||b.valor||b.VALOR||0);
   const gv=parseFloat(g.Valor||g.valor||g.VALOR||0);
-  if(Math.abs(bv-gv)<0.01) score+=40;
-  else if(Math.abs(bv-gv)/Math.max(Math.abs(bv),1)<0.1) score+=20;
-  const bd=String(b.Data||b.data||b.DATA||'');
-  const gd=String(g.Data||g.data||g.DATA||'');
-  if(bd===gd) score+=30; else if(bd.slice(0,7)===gd.slice(0,7)) score+=15;
-  const bh=String(b.Histórico||b.historico||b.Descricao||b.desc||b.HISTORICO||'').toLowerCase();
-  const gh=String(g.Descrição||g.descricao||g.desc||g.DESCRICAO||'').toLowerCase();
+  if(Math.abs(bv-gv)<0.01)s+=40;else if(Math.abs(bv-gv)/Math.max(Math.abs(bv),1)<0.1)s+=20;
+  const bd=String(b.Data||b.data||'');const gd=String(g.Data||g.data||'');
+  if(bd===gd)s+=30;else if(bd.slice(0,7)===gd.slice(0,7))s+=15;
+  const bh=String(b.Histórico||b.historico||b.Descricao||'').toLowerCase();
+  const gh=String(g.Descrição||g.descricao||g.desc||'').toLowerCase();
   const common=bh.split(' ').filter(w=>w.length>3&&gh.includes(w)).length;
-  score+=Math.min(20,common*5);
-  return score;
+  s+=Math.min(20,common*5);
+  return s;
 }
-
 function runConciliacao(){
-  const banco = concData.banco.length ? concData.banco : generateDemoData('banco');
-  const gerencial = concData.gerencial.length ? concData.gerencial : generateDemoData('gerencial');
-  const results=[];
-  const usedG=new Set();
+  const banco=concData.banco.length?concData.banco:demoData('banco');
+  const gerencial=concData.gerencial.length?concData.gerencial:demoData('gerencial');
+  const results=[];const usedG=new Set();
   for(const b of banco){
     let best=null,bestScore=0;
     for(let gi=0;gi<gerencial.length;gi++){
-      if(usedG.has(gi)) continue;
-      const s=scoreMatch(b,gerencial[gi]);
-      if(s>bestScore){bestScore=s;best=gi;}
+      if(usedG.has(gi))continue;
+      const sc=scoreMatch(b,gerencial[gi]);
+      if(sc>bestScore){bestScore=sc;best=gi;}
     }
     const bv=parseFloat(b.Valor||b.valor||0);
     const gv=best!==null?parseFloat(gerencial[best].Valor||gerencial[best].valor||0):0;
     let status='miss';
     if(best!==null&&bestScore>=80){status='ok';usedG.add(best);}
     else if(best!==null&&bestScore>=50){status='diff';usedG.add(best);}
-    else if(best!==null&&bestScore>=30){status='dup';}
+    else if(best!==null&&bestScore>=30)status='dup';
     results.push({banco:b,gerencial:best!==null?gerencial[best]:null,score:bestScore,status,bv,gv});
   }
   concData.results=results;
-  renderConc('all');
+  renderConc('all',null);
 }
-function generateDemoData(type){
+function demoData(type){
   const items=[
-    {Data:'15/06/2026',Histórico:'PIX CLIENTE JOÃO',Valor:1500,Descrição:'Recebimento João'},
+    {Data:'15/06/2026',Histórico:'PIX CLIENTE JOAO',Valor:1500,Descrição:'Recebimento João'},
     {Data:'15/06/2026',Histórico:'POSTO SHELL',Valor:-450,Descrição:'Combustível Operacional'},
     {Data:'16/06/2026',Histórico:'TED FORNECEDOR',Valor:-3200,Descrição:'Pagamento Fornecedor X'},
     {Data:'17/06/2026',Histórico:'PIX GADO CORTE',Valor:25000,Descrição:'Venda Gado Corte'},
     {Data:'18/06/2026',Histórico:'FOLHA PAGAMENTO',Valor:-8500,Descrição:'Custo Pessoal Jun'},
-    {Data:'19/06/2026',Histórico:'RAÇÃO ANIMAL',Valor:-1200,Descrição:'Custo Zootécnico'},
+    {Data:'19/06/2026',Histórico:'RACAO ANIMAL',Valor:-1200,Descrição:'Custo Zootécnico'},
     {Data:'20/06/2026',Histórico:'PIX ARRENDAMENTO',Valor:3500,Descrição:'Arrendamento Junho'},
   ];
   return items.map(i=>type==='banco'?{Data:i.Data,Histórico:i.Histórico,Valor:i.Valor}:{Data:i.Data,Descrição:i.Descrição,Valor:i.Valor});
 }
-function filterConc(f){
+function filterConc(f,el){
   document.querySelectorAll('.conc-stat').forEach(s=>s.classList.remove('active'));
-  event&&event.currentTarget&&event.currentTarget.classList.add('active');
-  renderConc(f);
+  if(el)el.classList.add('active');
+  renderConc(f,el);
 }
 function renderConc(filter){
-  const res = concData.results.length ? concData.results : [];
-  const all=res, ok=res.filter(r=>r.status==='ok'), diff=res.filter(r=>r.status==='diff'), dup=res.filter(r=>r.status==='dup'), miss=res.filter(r=>r.status==='miss');
-  document.getElementById('cs-total').textContent=all.length;
+  const res=concData.results;
+  const ok=res.filter(r=>r.status==='ok'),diff=res.filter(r=>r.status==='diff'),dup=res.filter(r=>r.status==='dup'),miss=res.filter(r=>r.status==='miss');
+  document.getElementById('cs-total').textContent=res.length;
   document.getElementById('cs-ok').textContent=ok.length;
   document.getElementById('cs-diff').textContent=diff.length;
   document.getElementById('cs-dup').textContent=dup.length;
   document.getElementById('cs-miss').textContent=miss.length;
-  const show = filter==='all'?all:filter==='ok'?ok:filter==='diff'?diff:filter==='dup'?dup:miss;
-  const statusLabel={ok:'✓ Conciliado',diff:'⚠ Divergência',dup:'⊕ Duplicado',miss:'✗ Não encontrado'};
-  const statusBadge={ok:'badge-green',diff:'badge-yellow',dup:'badge-blue',miss:'badge-red'};
+  const show=filter==='ok'?ok:filter==='diff'?diff:filter==='dup'?dup:filter==='miss'?miss:res;
+  const sLbl={ok:'✓ Conciliado',diff:'⚠ Divergência',dup:'⊕ Duplicado',miss:'✗ Não encontrado'};
+  const sBdg={ok:'badge-green',diff:'badge-yellow',dup:'badge-purple',miss:'badge-red'};
   const tbody=document.getElementById('tbody-conc');
   tbody.innerHTML=show.length?show.map(r=>`
     <tr>
@@ -1036,210 +1015,268 @@ function renderConc(filter){
       <td class="td-num ${r.bv<0?'color-danger':'color-ok'}">${fmtFull(r.bv)}</td>
       <td>${r.gerencial?r.gerencial.Descrição||r.gerencial.descricao||'—':'—'}</td>
       <td class="td-num ${r.gv<0?'color-danger':'color-ok'}">${r.gerencial?fmtFull(r.gv):'—'}</td>
-      <td><span style="font-size:11px;font-weight:600;color:${r.score>=80?'var(--ok)':r.score>=50?'var(--warn)':'var(--danger)'}">${r.score}%</span></td>
-      <td><span class="badge ${statusBadge[r.status]}">${statusLabel[r.status]}</span></td>
+      <td style="font-weight:700;font-size:12px;color:${r.score>=80?'var(--ok)':r.score>=50?'var(--warn)':'var(--danger)'}">${r.score}%</td>
+      <td><span class="badge ${sBdg[r.status]}">${sLbl[r.status]}</span></td>
       <td><button class="btn btn-outline btn-sm">Ajustar</button></td>
-    </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Nenhum resultado nesta categoria</td></tr>';
+    </tr>`).join('')
+    :'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Nenhum resultado nesta categoria</td></tr>';
 }
 
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // PLANO DE CONTAS
-// ═══════════════════════════════════════════════
-const PC = [
-  {cod:'1',desc:'RECEITAS',tipo:'Receita',grupo:'Grupo',cls:'pc-group'},
-  {cod:'1.1',desc:'Gado de Corte',tipo:'Receita',grupo:'Gado',cls:'pc-sub'},
-  {cod:'1.2',desc:'Gado P.O',tipo:'Receita',grupo:'Gado',cls:'pc-sub'},
-  {cod:'1.3',desc:'Confinamento',tipo:'Receita',grupo:'Gado',cls:'pc-sub'},
-  {cod:'1.4',desc:'Arrendamento',tipo:'Receita',grupo:'Imóvel',cls:'pc-sub'},
-  {cod:'1.5',desc:'Venda de Cavalos',tipo:'Receita',grupo:'Equinos',cls:'pc-sub'},
-  {cod:'1.6',desc:'Outros Produtos',tipo:'Receita',grupo:'Outros',cls:'pc-sub'},
-  {cod:'2',desc:'CUSTOS E DESPESAS',tipo:'Despesa',grupo:'Grupo',cls:'pc-group'},
-  {cod:'2.1',desc:'Impostos e taxas',tipo:'Despesa',grupo:'Fiscal',cls:'pc-sub'},
-  {cod:'2.2',desc:'Custo Zootécnico – Pastagem',tipo:'Despesa',grupo:'Zootécnico',cls:'pc-sub'},
-  {cod:'2.3',desc:'Custo Zootécnico – Veterinário',tipo:'Despesa',grupo:'Zootécnico',cls:'pc-sub'},
-  {cod:'2.4',desc:'Custo Veículos e Máquinas',tipo:'Despesa',grupo:'Operacional',cls:'pc-sub'},
-  {cod:'2.5',desc:'Conservação de Bens',tipo:'Despesa',grupo:'Operacional',cls:'pc-sub'},
-  {cod:'2.6',desc:'Custo Pessoal',tipo:'Despesa',grupo:'RH',cls:'pc-sub'},
-  {cod:'2.7',desc:'Despesas Administrativas',tipo:'Despesa',grupo:'Administrativo',cls:'pc-sub'},
-  {cod:'3',desc:'INVESTIMENTOS',tipo:'Investimento',grupo:'Grupo',cls:'pc-group'},
-  {cod:'3.1',desc:'Compra de Gado',tipo:'Investimento',grupo:'Gado',cls:'pc-sub'},
-  {cod:'3.2',desc:'Compra de Equinos',tipo:'Investimento',grupo:'Equinos',cls:'pc-sub'},
-  {cod:'3.3',desc:'Compra de Genética',tipo:'Investimento',grupo:'Genética',cls:'pc-sub'},
-  {cod:'3.4',desc:'Infraestrutura / Benfeitorias',tipo:'Investimento',grupo:'Infraestrutura',cls:'pc-sub'},
-  {cod:'3.5',desc:'Compra de Máquinas',tipo:'Investimento',grupo:'Máquinas',cls:'pc-sub'},
-  {cod:'3.6',desc:'Irrigação Pastagens',tipo:'Investimento',grupo:'Pastagem',cls:'pc-sub'},
-  {cod:'4',desc:'MÚTUO E MOVIMENTAÇÕES',tipo:'Mútuo',grupo:'Grupo',cls:'pc-group'},
-  {cod:'4.1',desc:'Mútuo Entrada',tipo:'Mútuo',grupo:'Mútuo',cls:'pc-sub'},
-  {cod:'4.2',desc:'Mútuo Saída',tipo:'Mútuo',grupo:'Mútuo',cls:'pc-sub'},
-  {cod:'4.3',desc:'Mútuo – Dalide',tipo:'Mútuo',grupo:'Mútuo',cls:'pc-sub'},
-  {cod:'4.4',desc:'Mútuo – Santander',tipo:'Mútuo',grupo:'Mútuo',cls:'pc-sub'},
-  {cod:'4.5',desc:'Frigorífico',tipo:'Mútuo',grupo:'Frigorífico',cls:'pc-sub'},
+// ══════════════════════════════════════════════════
+const PC=[
+  {cod:'1',    desc:'RECEITAS',                     tipo:'Receita',      grupo:'Grupo',        cls:''},
+  {cod:'1.1',  desc:'Gado de Corte',                tipo:'Receita',      grupo:'Gado',         cls:'pc-sub'},
+  {cod:'1.2',  desc:'Gado P.O',                     tipo:'Receita',      grupo:'Gado',         cls:'pc-sub'},
+  {cod:'1.3',  desc:'Confinamento',                 tipo:'Receita',      grupo:'Gado',         cls:'pc-sub'},
+  {cod:'1.4',  desc:'Arrendamento',                 tipo:'Receita',      grupo:'Imóvel',       cls:'pc-sub'},
+  {cod:'1.5',  desc:'Venda de Cavalos',             tipo:'Receita',      grupo:'Equinos',      cls:'pc-sub'},
+  {cod:'1.6',  desc:'Outros Produtos',              tipo:'Receita',      grupo:'Outros',       cls:'pc-sub'},
+  {cod:'2',    desc:'CUSTOS E DESPESAS',            tipo:'Despesa',      grupo:'Grupo',        cls:''},
+  {cod:'2.1',  desc:'Impostos e taxas',             tipo:'Despesa',      grupo:'Fiscal',       cls:'pc-sub'},
+  {cod:'2.2',  desc:'Custo Zootécnico – Pastagem',  tipo:'Despesa',      grupo:'Zootécnico',   cls:'pc-sub'},
+  {cod:'2.3',  desc:'Custo Zootécnico – Vet.',      tipo:'Despesa',      grupo:'Zootécnico',   cls:'pc-sub'},
+  {cod:'2.4',  desc:'Custo Veículos e Máquinas',    tipo:'Despesa',      grupo:'Operacional',  cls:'pc-sub'},
+  {cod:'2.5',  desc:'Conservação de Bens',          tipo:'Despesa',      grupo:'Operacional',  cls:'pc-sub'},
+  {cod:'2.6',  desc:'Custo Pessoal',                tipo:'Despesa',      grupo:'RH',           cls:'pc-sub'},
+  {cod:'2.7',  desc:'Despesas Administrativas',     tipo:'Despesa',      grupo:'Adm.',         cls:'pc-sub'},
+  {cod:'3',    desc:'INVESTIMENTOS',                tipo:'Investimento',  grupo:'Grupo',        cls:''},
+  {cod:'3.1',  desc:'Compra de Gado',               tipo:'Investimento',  grupo:'Gado',         cls:'pc-sub'},
+  {cod:'3.2',  desc:'Compra de Equinos',            tipo:'Investimento',  grupo:'Equinos',      cls:'pc-sub'},
+  {cod:'3.3',  desc:'Compra de Genética',           tipo:'Investimento',  grupo:'Genética',     cls:'pc-sub'},
+  {cod:'3.4',  desc:'Infraestrutura',               tipo:'Investimento',  grupo:'Infra',        cls:'pc-sub'},
+  {cod:'3.5',  desc:'Compra de Máquinas',           tipo:'Investimento',  grupo:'Máquinas',     cls:'pc-sub'},
+  {cod:'4',    desc:'MÚTUO E MOVIMENTAÇÕES',        tipo:'Mútuo',        grupo:'Grupo',        cls:''},
+  {cod:'4.1',  desc:'Mútuo Entrada',                tipo:'Mútuo',        grupo:'Mútuo',        cls:'pc-sub'},
+  {cod:'4.2',  desc:'Mútuo Saída',                  tipo:'Mútuo',        grupo:'Mútuo',        cls:'pc-sub'},
+  {cod:'4.3',  desc:'Frigorífico',                  tipo:'Mútuo',        grupo:'Frigorífico',  cls:'pc-sub'},
 ];
 function renderPC(){
-  document.getElementById('tbody-pc').innerHTML=PC.map(r=>`<tr><td style="font-family:monospace;font-size:12px">${r.cod}</td><td class="${r.cls}">${r.desc}</td><td><span class="badge ${r.tipo==='Receita'?'badge-green':r.tipo==='Despesa'?'badge-red':r.tipo==='Investimento'?'badge-yellow':'badge-blue'}">${r.tipo}</span></td><td style="font-size:11px;color:var(--muted)">${r.grupo}</td></tr>`).join('');
+  const tBdg={Receita:'badge-green',Despesa:'badge-red',Investimento:'badge-yellow',Mútuo:'badge-blue'};
+  document.getElementById('tbody-pc').innerHTML=PC.map(r=>`
+    <tr>
+      <td style="font-family:monospace;font-size:12px">${r.cod}</td>
+      <td class="${r.cls?'':'pc-group'}" style="${r.cls?'padding-left:28px;color:var(--muted)':'font-weight:700;color:var(--g2)'}">${r.desc}</td>
+      <td><span class="badge ${tBdg[r.tipo]||'badge-gray'}">${r.tipo}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${r.grupo}</td>
+    </tr>`).join('');
 }
 
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // CONTAS BANCÁRIAS
-// ═══════════════════════════════════════════════
-const BANCOS = [
-  {nome:'Sicredi', ag:'0001', conta:'12345-6', saldo:612760, icon:'🟢'},
-  {nome:'Banco do Brasil', ag:'0002', conta:'98765-4', saldo:85400, icon:'🔵'},
-  {nome:'Santander', ag:'0033', conta:'55512-3', saldo:-12300, icon:'🔴'},
+// ══════════════════════════════════════════════════
+const BANCOS=[
+  {nome:'Sicredi',         ag:'0001',conta:'12345-6', saldo:612760},
+  {nome:'Banco do Brasil', ag:'0002',conta:'98765-4', saldo:85400},
+  {nome:'Santander',       ag:'0033',conta:'55512-3', saldo:-12300},
 ];
 function renderBancos(){
   document.getElementById('bancos-grid').innerHTML=BANCOS.map(b=>`
     <div class="kpi" style="border-left:4px solid var(--${b.saldo>=0?'g3':'danger'})">
-      <div class="kpi-label">${b.icon} ${b.nome}</div>
+      <div class="kpi-label">${b.nome}</div>
       <div class="kpi-value ${b.saldo<0?'color-danger':''}">${fmtFull(b.saldo)}</div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px">Ag: ${b.ag} · Conta: ${b.conta}</div>
-      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(100,Math.abs(b.saldo)/10000)}%;background:${b.saldo<0?'var(--danger)':'var(--gold)'}"></div></div>
+      <div class="kpi-bar mt8"><div class="kpi-bar-fill" style="width:${Math.min(100,Math.abs(b.saldo)/10000)}%;background:${b.saldo<0?'var(--danger)':'var(--gold)'}"></div></div>
     </div>`).join('');
 }
 
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 // DASHBOARD
-// ═══════════════════════════════════════════════
+// ══════════════════════════════════════════════════
 function renderRecentLanc(){
   const tbody=document.getElementById('tbody-recent');
-  const rows = lancamentos.slice(0,8);
-  const typeLabel={R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
-  const typeBadge={R:'badge-green',D:'badge-red',I:'badge-yellow',M:'badge-blue'};
+  const rows=lancamentos.slice(0,8);
+  const tLbl={R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
+  const tBdg={R:'badge-green',D:'badge-red',I:'badge-yellow',M:'badge-blue'};
   tbody.innerHTML=rows.length?rows.map(l=>`
     <tr>
-      <td>${l.data}</td><td>${l.desc}</td><td style="font-size:11px">${l.conta}</td>
+      <td>${l.data}</td><td>${l.desc}</td>
+      <td style="font-size:11px">${l.conta||'—'}</td>
       <td style="font-size:11px">${l.cc||'—'}</td>
-      <td><span class="badge ${typeBadge[l.tipo]||'badge-gray'}">${typeLabel[l.tipo]||l.tipo}</span></td>
+      <td><span class="badge ${tBdg[l.tipo]||'badge-gray'}">${tLbl[l.tipo]||l.tipo}</span></td>
       <td class="td-num ${l.tipo==='R'?'color-ok':'color-danger'}">${fmtFull(l.valor)}</td>
     </tr>`).join('')
-    :'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Nenhum lançamento ainda. Clique em "Novo Lançamento".</td></tr>';
+    :'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Nenhum lançamento ainda</td></tr>';
 }
 
 function renderDash(){
+  // KPIs baseados nos lançamentos
+  const ano=parseInt(document.getElementById('dash-ano').value);
+  const mes=parseInt(document.getElementById('dash-mes').value);
+  const filtered=lancamentos.filter(l=>{
+    if(!l.data)return false;
+    const [y,m]=l.data.split('-').map(Number);
+    if(y!==ano)return false;
+    if(mes&&m!==mes)return false;
+    return true;
+  });
+  const rec=filtered.filter(l=>l.tipo==='R').reduce((s,l)=>s+l.valor,0);
+  const cust=filtered.filter(l=>l.tipo==='D').reduce((s,l)=>s+l.valor,0);
+  const res=rec-cust;
+  document.getElementById('kpi-rec').textContent=fmtFull(rec);
+  document.getElementById('kpi-cust').textContent=fmtFull(cust);
+  document.getElementById('kpi-res').textContent=fmtFull(res);
+  document.getElementById('kpi-res').className='kpi-value '+(res>=0?'color-ok':'color-danger');
   renderRecentLanc();
+
   // Charts
-  if(charts.recdesp) charts.recdesp.destroy();
+  if(charts.rd) charts.rd.destroy();
   if(charts.cc) charts.cc.destroy();
+  const recMes=Array(12).fill(0),custMes=Array(12).fill(0);
+  for(const l of lancamentos){
+    if(!l.data)continue;
+    const[y,m]=l.data.split('-').map(Number);
+    if(y!==ano)continue;
+    if(l.tipo==='R')recMes[m-1]+=l.valor;
+    if(l.tipo==='D')custMes[m-1]+=l.valor;
+  }
   const ctx1=document.getElementById('chart-recdesp').getContext('2d');
-  charts.recdesp=new Chart(ctx1,{type:'bar',data:{labels:MESES,datasets:[
-    {label:'Receita',data:[0,0,0,0,0,0,0,0,0,0,0,0],backgroundColor:'rgba(64,145,108,.8)'},
-    {label:'Despesa',data:[0,0,0,0,0,0,0,0,0,0,0,0],backgroundColor:'rgba(220,38,38,.7)'},
+  charts.rd=new Chart(ctx1,{type:'bar',data:{labels:MESES,datasets:[
+    {label:'Receita',data:recMes,backgroundColor:'rgba(64,145,108,.8)'},
+    {label:'Despesa',data:custMes,backgroundColor:'rgba(220,38,38,.7)'},
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f0ece4'}}}}});
   const ctx2=document.getElementById('chart-cc').getContext('2d');
   charts.cc=new Chart(ctx2,{type:'doughnut',data:{labels:['Gado Corte','Gado P.O','Confinamento','Operacional','RH','Administrativo'],datasets:[{data:[45,20,15,10,7,3],backgroundColor:['#1B4332','#2D6A4F','#40916C','#C9A227','#74C69D','#E9C46A']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
 }
 
-// ═══════════════════════════════════════════════
-// EXPORT – EXCEL
-// ═══════════════════════════════════════════════
-function exportFluxoXLSX(){
-  const year=parseInt(document.getElementById('sel-ano-mes').value);
-  const month=parseInt(document.getElementById('sel-mes').value);
-  const days=daysInMonth(year,month);
-  const weeks=[];
-  for(let w=0;w<4;w++){const s=w*7+1,e=Math.min(s+6,days);if(s>days)break;weeks.push({start:s,end:e,label:(w+1)+'ª Sem'});}
-  const headers=['Descrição','TOTAL'];
-  for(const wk of weeks){for(let d=wk.start;d<=wk.end;d++)headers.push('Dia '+d);headers.push(wk.label);}
-  const rows=[headers];
-  for(const row of ROWS){
-    if(row.type==='section'){rows.push([row.label]);continue;}
-    let rowTotal=0,dayVals={};
-    for(let d=1;d<=days;d++){dayVals[d]=row.type==='subtotal'?computeSubtotalDay(row.id,year,month,d):getVal(year,month,row.id,d);rowTotal+=dayVals[d];}
-    if(row.type==='subtotal') rowTotal=computeSubtotal(row.id,year,month,days);
-    const r=[row.label,rowTotal];
-    for(const wk of weeks){let ws=0;for(let d=wk.start;d<=wk.end;d++){r.push(dayVals[d]);ws+=dayVals[d];}r.push(ws);}
-    rows.push(r);
-  }
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb,ws,'FC Mês');
-  XLSX.writeFile(wb,`FluxoCaixa_${MESES_FULL[month-1]}_${year}.xlsx`);
-}
-
-function exportFCAnoXLSX(){
-  const year=parseInt(document.getElementById('sel-ano').value);
-  const headers=['Descrição','TOTAL ANO',...MESES];
-  const rows=[headers];
-  for(const row of ROWS){
-    if(row.type==='section'){rows.push([row.label]);continue;}
-    let yrT=0,ms=[];
-    for(let m=1;m<=12;m++){
-      let v=row.type==='subtotal'?computeSubtotal(row.id,year,m,daysInMonth(year,m)):0;
-      if(row.type!=='subtotal'){const days=daysInMonth(year,m);for(let d=1;d<=days;d++)v+=getVal(year,m,row.id,d);}
-      ms.push(v);yrT+=v;
-    }
-    rows.push([row.label,yrT,...ms]);
-  }
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb,ws,'FC Ano');
-  XLSX.writeFile(wb,`FluxoCaixa_Anual_${year}.xlsx`);
-}
-
-function exportLancXLSX(){
-  const headers=['Data','Descrição','Conta','Centro de Custo','Tipo','Banco','Valor','Status'];
-  const rows=[headers,...lancamentos.map(l=>[l.data,l.desc,l.conta,l.cc,l.tipo,l.banco,l.valor,l.status])];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Lançamentos');
-  XLSX.writeFile(wb,'Lancamentos_HR.xlsx');
-}
-
-function exportConcXLSX(){
-  const headers=['Data Banco','Histórico Banco','Valor Banco','Descrição Gerencial','Valor Gerencial','Score','Status'];
-  const rows=[headers,...concData.results.map(r=>[
-    r.banco.Data||'',r.banco.Histórico||'',r.bv,
-    r.gerencial?r.gerencial.Descrição||'':'—',r.gv,r.score+'%',r.status
-  ])];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Conciliação');
-  XLSX.writeFile(wb,'Conciliacao_HR.xlsx');
-}
-
-function exportGenXLSX(tipo){
-  alert('Relatório "'+tipo+'" exportado (demo).');
-}
-
-function exportFluxoPDF(){
-  window.print();
-}
-
-// ═══════════════════════════════════════════════
-// IMPORT LANÇAMENTOS
-// ═══════════════════════════════════════════════
-function importLancamentos(inp){
-  const f=inp.files[0]; if(!f) return;
+// ══════════════════════════════════════════════════
+// IMPORT XLSX
+// ══════════════════════════════════════════════════
+function importXLSX(inp){
+  const f=inp.files[0];if(!f)return;
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     const wb=XLSX.read(e.target.result,{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const json=XLSX.utils.sheet_to_json(ws,{defval:''});
     let count=0;
     for(const row of json){
+      const data=String(row.Data||row.data||row.DATE||'').replace(/\//g,'-')||new Date().toISOString().slice(0,10);
       const lanc={
-        id:Date.now()+count++,
-        data:String(row.Data||row.data||row.DATE||new Date().toISOString().slice(0,10)).replace(/\//g,'-'),
+        data,
         desc:String(row.Descrição||row.Historico||row.desc||row.HISTORICO||''),
         conta:String(row.Conta||row.conta||'Outros Produtos'),
         cc:String(row.CC||row.CentroCusto||''),
         tipo:String(row.Tipo||row.tipo||'D'),
         banco:String(row.Banco||row.banco||''),
         valor:parseFloat(String(row.Valor||row.valor||0).replace(',','.'))||0,
-        status:'importado'
+        obs:'',status:'importado'
       };
-      if(lanc.desc) lancamentos.push(lanc);
+      if(lanc.desc&&lanc.valor){
+        setSaving();
+        if(online){
+          const{data:d}=await sb.from('lancamentos').insert([{
+            data:lanc.data,descricao:lanc.desc,conta:lanc.conta,centro_custo:lanc.cc,
+            tipo:lanc.tipo,banco:lanc.banco,valor:lanc.valor,status:lanc.status,
+            ano:parseInt(lanc.data.slice(0,4)),mes:parseInt(lanc.data.slice(5,7)),dia:parseInt(lanc.data.slice(8,10))
+          }]).select();
+          if(d)lanc.id=d[0].id;
+        } else {lanc.id=Date.now()+count;}
+        lancamentos.push(lanc);count++;
+      }
     }
-    save(); renderLanc(); renderRecentLanc();
+    if(!online)localStorage.setItem('hrLanc',JSON.stringify(lancamentos));
+    setOk();
+    renderLanc();renderRecentLanc();
     alert(`✓ ${count} lançamentos importados de ${f.name}`);
   };
   reader.readAsArrayBuffer(f);
 }
 
-// ═══════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
-  // Set today's date
-  document.getElementById('f-data').value=new Date().toISOString().slice(0,10);
+// ══════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════
+function exportFluxoXLSX(){
+  const year=parseInt(document.getElementById('sel-ano-mes').value);
+  const month=parseInt(document.getElementById('sel-mes').value);
+  const days=daysInMonth(year,month);
+  const weeks=[];
+  for(let w=0;w<5;w++){const s=w*7+1,e=Math.min(s+6,days);if(s>days)break;weeks.push({start:s,end:e,label:(w+1)+'ª Sem'});}
+  const hdr=['Descrição','TOTAL'];
+  for(const wk of weeks){for(let d=wk.start;d<=wk.end;d++)hdr.push('Dia '+d);hdr.push(wk.label);}
+  const rows=[hdr];
+  for(const row of ROWS){
+    if(row.type==='section'){rows.push([row.label]);continue;}
+    const r=[row.label];
+    let t=0;
+    const dv={};
+    for(let d=1;d<=days;d++){dv[d]=row.type==='subtotal'?computeSubtotalDay(row.id,year,month,d):getVal(year,month,row.id,d);t+=dv[d];}
+    if(row.type==='subtotal')t=computeSubtotal(row.id,year,month,days);
+    r.push(t);
+    for(const wk of weeks){let ws=0;for(let d=wk.start;d<=wk.end;d++){r.push(dv[d]);ws+=dv[d];}r.push(ws);}
+    rows.push(r);
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,'FC Mês');
+  XLSX.writeFile(wb,`HR_FluxoCaixa_${MESES_FULL[month-1]}_${year}.xlsx`);
+}
+function exportFCAnoXLSX(){
+  const year=parseInt(document.getElementById('sel-ano').value);
+  const hdr=['Descrição','TOTAL ANO',...MESES];
+  const rows=[hdr];
+  for(const row of ROWS){
+    if(row.type==='section'){rows.push([row.label]);continue;}
+    let t=0;const ms=[];
+    for(let m=1;m<=12;m++){
+      const days=daysInMonth(year,m);
+      let v=row.type==='subtotal'?computeSubtotal(row.id,year,m,days):0;
+      if(row.type!=='subtotal')for(let d=1;d<=days;d++)v+=getVal(year,m,row.id,d);
+      ms.push(v);t+=v;
+    }
+    rows.push([row.label,t,...ms]);
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,'FC Ano');
+  XLSX.writeFile(wb,`HR_FluxoCaixa_Anual_${year}.xlsx`);
+}
+function exportLancXLSX(){
+  const hdr=['Data','Descrição','Conta','Centro de Custo','Tipo','Banco','Valor','Status'];
+  const rows=[hdr,...lancamentos.map(l=>[l.data,l.desc,l.conta,l.cc,l.tipo,l.banco,l.valor,l.status])];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Lançamentos');
+  XLSX.writeFile(wb,'HR_Lancamentos.xlsx');
+}
+function exportConcXLSX(){
+  const hdr=['Data Banco','Histórico','Valor Banco','Desc. Gerencial','Valor Gerencial','Score','Status'];
+  const rows=[hdr,...concData.results.map(r=>[r.banco.Data||'',r.banco.Histórico||'',r.bv,r.gerencial?r.gerencial.Descrição||'':'',r.gv,r.score+'%',r.status])];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Conciliação');
+  XLSX.writeFile(wb,'HR_Conciliacao.xlsx');
+}
+function exportGenXLSX(t){alert('Relatório exportado ✓');}
+
+// ══════════════════════════════════════════════════
+// BANNER DE CONFIGURAÇÃO
+// ══════════════════════════════════════════════════
+function renderSetupBanner(configured){
+  const area=document.getElementById('setup-area');
+  if(configured){area.innerHTML='';return;}
+  area.innerHTML=`
+    <div class="setup-banner">
+      <div style="font-size:32px">☁️</div>
+      <div style="flex:1">
+        <h3>Conecte ao banco de dados para salvar na nuvem</h3>
+        <p>Agora o sistema está em modo local. Para acessar de qualquer PC, siga os 3 passos:</p>
+        <ul class="steps">
+          <li>Acesse <strong>supabase.com</strong> → Crie conta grátis → Novo projeto: <em>hr-resultado</em></li>
+          <li>No projeto Supabase: <strong>SQL Editor → Run</strong> com o arquivo <em>supabase/schema.sql</em> do repositório</li>
+          <li>No Vercel: <strong>Settings → Environment Variables</strong> → adicione <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code></li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// INICIALIZAÇÃO
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('f-data').value = new Date().toISOString().slice(0,10);
+  await initSupabase();
+  await loadLancamentos();
+  renderSetupBanner(online);
   renderDash();
 });
 </script>
