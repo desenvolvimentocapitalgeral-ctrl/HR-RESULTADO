@@ -295,8 +295,9 @@ select.ctrl:focus{border-color:var(--g3)}
           <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
           <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
         </select>
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('imp-xlsx').click()">⬆ Importar XLSX</button>
-        <input type="file" id="imp-xlsx" accept=".xlsx,.csv" style="display:none" onchange="importXLSX(this)"/>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('imp-fluxo').click()" title="Importar planilha de Fluxo de Caixa (template do sistema ou seu Excel original)">⬆ Importar Fluxo</button>
+        <input type="file" id="imp-fluxo" accept=".xlsx" style="display:none" onchange="importFluxoXLSX(this)"/>
+        <button class="btn btn-outline btn-sm" onclick="exportFluxoTemplate()" title="Baixar template em branco para preencher e importar">⬇ Template</button>
       </div>
       <span id="fc-mes-info" style="font-size:11px;color:var(--muted)"></span>
     </div>
@@ -1180,6 +1181,139 @@ function importXLSX(inp){
     setOk();
     renderLanc();renderRecentLanc();
     alert(`✓ ${count} lançamentos importados de ${f.name}`);
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+// ══════════════════════════════════════════════════
+// IMPORT / EXPORT FLUXO DE CAIXA
+// ══════════════════════════════════════════════════
+
+// Exporta template em branco no formato exato do sistema
+function exportFluxoTemplate(){
+  const year=parseInt(document.getElementById('sel-ano-mes').value);
+  const month=parseInt(document.getElementById('sel-mes').value);
+  const days=daysInMonth(year,month);
+  const hdr=['Descrição'];
+  for(let d=1;d<=days;d++) hdr.push('Dia '+d);
+  const rows=[hdr];
+  for(const row of ROWS){
+    if(row.type==='section'||row.type==='subtotal'||row.type==='caixa') continue;
+    const r=[row.label];
+    for(let d=1;d<=days;d++) r.push('');
+    rows.push(r);
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:36},...hdr.slice(1).map(()=>({wch:9}))];
+  XLSX.utils.book_append_sheet(wb,ws,'Fluxo');
+  XLSX.writeFile(wb,`Template_FluxoCaixa_${MESES_FULL[month-1]}_${year}.xlsx`);
+}
+
+// Mapeamento fuzzy de labels do Excel → row_ids do sistema
+function matchRowId(label){
+  if(!label) return null;
+  const s=String(label).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  // Tenta correspondência exata primeiro
+  for(const row of ROWS){
+    if(row.type==='section'||row.type==='subtotal'||row.type==='caixa') continue;
+    const rl=row.label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'').trim();
+    if(rl===s.replace(/[^a-z0-9 ]/g,'')) return row.id;
+  }
+  // Mapeamento por palavras-chave
+  const MAP=[
+    [['gado','corte'],            'gado_corte'],
+    [['gado','p.o','po','puro'],  'gado_po'],
+    [['confinamento'],            'confinamento'],
+    [['arrendamento'],            'arrendamento'],
+    [['cavalo','equino','venda cavalo'],'cavalos'],
+    [['outros produto'],          'outros_prod'],
+    [['imposto','taxa','venda'],  'impostos'],
+    [['pastagem','past'],         'zoo_past'],
+    [['vet','medico','zoo'],      'zoo_vet'],
+    [['veiculo','maquina','trans'],'veiculos'],
+    [['conserv','manutencao'],    'conserv'],
+    [['pessoal','salario','funcionario'],'pessoal'],
+    [['admin','despesa admin'],   'admin'],
+    [['compra gado','comp gado'], 'comp_gado'],
+    [['compra equino','equino'],  'comp_equino'],
+    [['genetica','gen'],          'comp_gen'],
+    [['infraestrutura','benfeit'],'infra'],
+    [['imovel'],                  'imovel'],
+    [['compra maquina'],          'maquinas'],
+    [['irrigacao'],               'irrigacao'],
+    [['adiantamento','adiant'],   'adiant'],
+    [['investimento adicional','inv outro'],'inv_outros'],
+    [['evento','comercial'],      'eventos'],
+    [['mutuo entrada','mutuo in'],'mutuo_in'],
+    [['mutuo saida','mutuo out'], 'mutuo_out'],
+    [['mutuo dalide saida','dalide out'],'mutuo_dalide_out'],
+    [['mutuo dalide','dalide in'],'mutuo_dalide_in'],
+    [['mutuo santander in'],      'mutuo_sant_in'],
+    [['mutuo santander out'],     'mutuo_sant_out'],
+    [['mutuo genetica','mutuo gen'],'mutuo_gen'],
+    [['frigorifico','frig'],      'frig'],
+    [['caixa inicial'],           'cx_inicial'],
+    [['caixa final'],             'cx_final'],
+  ];
+  for(const [kws,id] of MAP){
+    if(kws.some(kw=>s.includes(kw))) return id;
+  }
+  return null;
+}
+
+// Importa Excel do Fluxo de Caixa (template do sistema ou Excel original do usuário)
+async function importFluxoXLSX(inp){
+  const f=inp.files[0]; if(!f) return;
+  const year=parseInt(document.getElementById('sel-ano-mes').value);
+  const month=parseInt(document.getElementById('sel-mes').value);
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(!aoa||aoa.length<2){alert('Planilha vazia ou inválida.');return;}
+    const hdr=aoa[0].map(h=>String(h).trim());
+    // Detecta colunas de dias: "Dia N" ou número direto
+    const dayCols=[];
+    for(let c=1;c<hdr.length;c++){
+      const h=hdr[c];
+      const m=/^dia\s*(\d+)$/i.exec(h)||/^(\d+)$/.exec(String(h).trim());
+      if(m) dayCols.push({col:c,day:parseInt(m[1])});
+    }
+    if(dayCols.length===0){
+      alert('Não encontrei colunas de dias.\nO cabeçalho deve ter "Dia 1", "Dia 2" ... ou números 1, 2, 3...');
+      inp.value=''; return;
+    }
+    let saved=0, skipped=0;
+    setSaving();
+    for(let r=1;r<aoa.length;r++){
+      const rowLabel=String(aoa[r][0]||'').trim();
+      if(!rowLabel) continue;
+      const rowId=matchRowId(rowLabel);
+      if(!rowId){skipped++;continue;}
+      for(const {col,day} of dayCols){
+        const raw=aoa[r][col];
+        const val=parseFloat(String(raw).replace(',','.'))||0;
+        if(val===0) continue;
+        setVal(year,month,rowId,day,val);
+        if(online){
+          await sb.from('fluxo_caixa').upsert(
+            {ano:year,mes:month,dia:day,row_id:rowId,valor:val},
+            {onConflict:'ano,mes,dia,row_id'}
+          );
+        }
+        saved++;
+      }
+    }
+    if(!online) localStorage.setItem('hrFluxo',JSON.stringify(fluxoCache));
+    setOk();
+    renderFCMes();
+    inp.value='';
+    const msg=skipped>0
+      ? `✓ ${saved} células importadas.\n⚠ ${skipped} linhas não reconhecidas (verifique os nomes das categorias).`
+      : `✓ ${saved} células importadas com sucesso!`;
+    alert(msg);
   };
   reader.readAsArrayBuffer(f);
 }
