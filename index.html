@@ -151,6 +151,10 @@ select.ctrl:focus{border-color:var(--g3)}
 .upload-zone{border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg)}
 .upload-zone:hover{border-color:var(--g3);background:#F0FAF4}
 .upload-zone p{font-size:12px;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--g3);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+#btn-analisar-ia:disabled{opacity:.5;cursor:not-allowed}
+.td-num{text-align:right;font-variant-numeric:tabular-nums}
 .upload-zone strong{color:var(--g2)}
 
 /* MISC */
@@ -343,46 +347,96 @@ select.ctrl:focus{border-color:var(--g3)}
 <!-- ═══ CONCILIAÇÃO ═══ -->
 <section class="screen" id="screen-conciliacao">
   <div class="page-header">
-    <div><h1>Conciliação Bancária</h1><p>Matching automático · IA</p></div>
-    <div style="display:flex;gap:8px">
+    <div><h1>Conciliação Bancária</h1><p id="conc-subtitle">IA · Confirme ou ajuste as sugestões</p></div>
+    <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-outline btn-sm" onclick="exportConcXLSX()">⬇ Excel</button>
-      <button class="btn btn-gold" onclick="runConciliacao()">▶ Conciliar Agora</button>
+      <button class="btn btn-outline btn-sm" onclick="confirmarTodos()" id="btn-confirmar-todos" style="display:none">✓ Confirmar Todos (alta conf.)</button>
+      <button class="btn btn-gold" id="btn-analisar-ia" onclick="runAIConciliacao()" disabled>🤖 Analisar com IA</button>
     </div>
   </div>
+
   <div class="grid-2 section-gap">
     <div class="card">
-      <div class="card-title">Extrato Bancário</div>
+      <div class="card-title">1. Extrato Bancário</div>
       <div class="upload-zone" onclick="document.getElementById('imp-banco').click()">
-        <p style="margin-bottom:6px;font-size:20px">📂</p>
-        <p><strong>Selecionar Arquivo</strong><br>OFX · CSV · XLSX</p>
+        <p style="margin-bottom:6px;font-size:22px">📂</p>
+        <p><strong>Importar Extrato</strong><br><span style="font-size:10px;color:var(--muted)">XLSX · CSV · OFX</span></p>
       </div>
       <input type="file" id="imp-banco" accept=".xlsx,.csv,.ofx" style="display:none" onchange="loadBanco(this)"/>
-      <p id="banco-info" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center"></p>
+      <p id="banco-info" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;min-height:18px"></p>
     </div>
-    <div class="card">
-      <div class="card-title">Base Gerencial</div>
-      <div class="upload-zone" onclick="document.getElementById('imp-gerencial').click()">
-        <p style="margin-bottom:6px;font-size:20px">📊</p>
-        <p><strong>Selecionar Arquivo</strong><br>Excel Financeiro · Lançamentos</p>
+    <div class="card" id="ai-panel">
+      <div class="card-title">2. Inteligência Artificial</div>
+      <div id="ai-status-wrap" style="text-align:center;padding:16px 0">
+        <p style="font-size:28px;margin-bottom:6px">🤖</p>
+        <p id="ai-status" style="font-size:12px;color:var(--muted)">Importe o extrato bancário para ativar a IA</p>
+        <p id="ai-key-warn" style="font-size:11px;color:var(--warn);margin-top:6px;display:none">
+          ⚠ Chave ANTHROPIC_API_KEY não configurada no Vercel.<br>
+          <a href="https://vercel.com/helbert-s-projects/hr-resultado/settings/environment-variables" target="_blank" style="color:var(--g3)">Clique aqui para adicionar</a>
+        </p>
       </div>
-      <input type="file" id="imp-gerencial" accept=".xlsx,.csv" style="display:none" onchange="loadGerencial(this)"/>
-      <p id="gerencial-info" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center"></p>
+      <div id="ai-progress" style="display:none;padding:8px 0">
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div id="ai-progress-bar" style="height:100%;background:var(--gold);width:0%;transition:width 0.5s;border-radius:2px"></div>
+        </div>
+        <p id="ai-progress-txt" style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px"></p>
+      </div>
     </div>
   </div>
+
   <div class="conc-stats">
-    <div class="conc-stat active" onclick="filterConc('all',this)"><div class="cs-num" id="cs-total">0</div><div class="cs-label">Total</div></div>
-    <div class="conc-stat cs-ok" onclick="filterConc('ok',this)"><div class="cs-num" id="cs-ok">0</div><div class="cs-label">Conciliados</div></div>
-    <div class="conc-stat cs-diff" onclick="filterConc('diff',this)"><div class="cs-num" id="cs-diff">0</div><div class="cs-label">Divergências</div></div>
-    <div class="conc-stat cs-dup" onclick="filterConc('dup',this)"><div class="cs-num" id="cs-dup">0</div><div class="cs-label">Duplicados</div></div>
-    <div class="conc-stat cs-miss" onclick="filterConc('miss',this)"><div class="cs-num" id="cs-miss">0</div><div class="cs-label">Não Encontrados</div></div>
+    <div class="conc-stat active" onclick="filterConcAI('all',this)"><div class="cs-num" id="cs-total">0</div><div class="cs-label">Total</div></div>
+    <div class="conc-stat cs-ok" onclick="filterConcAI('confirmado',this)"><div class="cs-num" id="cs-ok">0</div><div class="cs-label">Confirmados</div></div>
+    <div class="conc-stat cs-diff" onclick="filterConcAI('alta',this)"><div class="cs-num" id="cs-diff">0</div><div class="cs-label">Alta Conf.</div></div>
+    <div class="conc-stat cs-dup" onclick="filterConcAI('revisar',this)"><div class="cs-num" id="cs-dup">0</div><div class="cs-label">Revisar</div></div>
+    <div class="conc-stat cs-miss" onclick="filterConcAI('manual',this)"><div class="cs-num" id="cs-miss">0</div><div class="cs-label">Manual</div></div>
   </div>
+
   <div class="card" style="padding:0;overflow:hidden">
     <table class="data-table">
-      <thead><tr><th>Data Banco</th><th>Histórico Banco</th><th style="text-align:right">Valor Banco</th><th>Lançamento Gerencial</th><th style="text-align:right">Valor Gerencial</th><th>Score</th><th>Status</th><th>Ação</th></tr></thead>
-      <tbody id="tbody-conc"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">Importe os arquivos e clique em "Conciliar Agora"</td></tr></tbody>
+      <thead><tr>
+        <th>Data</th><th>Histórico Banco</th><th style="text-align:right">Valor</th>
+        <th>🤖 Sugestão IA</th><th>Conta</th><th>Tipo</th>
+        <th style="text-align:center">Conf.</th><th>Ação</th>
+      </tr></thead>
+      <tbody id="tbody-conc">
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">
+          Importe o extrato bancário e clique em <strong>🤖 Analisar com IA</strong>
+        </td></tr>
+      </tbody>
     </table>
   </div>
 </section>
+
+<!-- MODAL AJUSTE CONCILIAÇÃO -->
+<div class="modal-overlay" id="modal-ajuste" style="display:none" onclick="if(event.target===this)closeModal('modal-ajuste')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><span>Ajustar Classificação</span><button class="modal-close" onclick="closeModal('modal-ajuste')">✕</button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="adj-idx"/>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Descrição Gerencial</label>
+        <input class="form-input" id="adj-desc" placeholder="Ex: Venda Gado Corte Junho"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Conta do Plano de Contas</label>
+        <select class="form-input" id="adj-conta">
+          <option value="">-- Selecione --</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Tipo</label>
+        <select class="form-input" id="adj-tipo">
+          <option value="R">Receita</option>
+          <option value="D" selected>Despesa</option>
+          <option value="I">Investimento</option>
+          <option value="M">Mútuo</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="salvarAjuste()">Salvar e Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ RELATÓRIOS ═══ -->
 <section class="screen" id="screen-relatorios">
@@ -925,6 +979,7 @@ async function renderFCAno() {
 // ══════════════════════════════════════════════════
 // CONCILIAÇÃO
 // ══════════════════════════════════════════════════
+// ── CARREGA EXTRATO BANCÁRIO ──────────────────────
 function loadBanco(inp){
   const f=inp.files[0];if(!f)return;
   const reader=new FileReader();
@@ -932,97 +987,210 @@ function loadBanco(inp){
     const wb=XLSX.read(e.target.result,{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     concData.banco=XLSX.utils.sheet_to_json(ws,{defval:''});
-    document.getElementById('banco-info').textContent=`✓ ${f.name} · ${concData.banco.length} registros`;
+    document.getElementById('banco-info').textContent=`✓ ${f.name} · ${concData.banco.length} lançamentos`;
+    document.getElementById('ai-status').textContent=`${concData.banco.length} lançamentos prontos para análise`;
+    document.getElementById('ai-status').style.color='var(--g3)';
+    const btn=document.getElementById('btn-analisar-ia');
+    btn.disabled=false;
+    // Preenche select de contas no modal
+    const sel=document.getElementById('adj-conta');
+    sel.innerHTML='<option value="">-- Selecione --</option>'+
+      ROWS.filter(r=>!['section','subtotal','caixa'].includes(r.type))
+          .map(r=>`<option value="${r.id}">${r.label}</option>`).join('');
   };
   reader.readAsArrayBuffer(f);
 }
-function loadGerencial(inp){
-  const f=inp.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const wb=XLSX.read(e.target.result,{type:'array'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    concData.gerencial=XLSX.utils.sheet_to_json(ws,{defval:''});
-    document.getElementById('gerencial-info').textContent=`✓ ${f.name} · ${concData.gerencial.length} registros`;
-  };
-  reader.readAsArrayBuffer(f);
-}
-function scoreMatch(b,g){
-  let s=0;
-  const bv=parseFloat(b.Valor||b.valor||b.VALOR||0);
-  const gv=parseFloat(g.Valor||g.valor||g.VALOR||0);
-  if(Math.abs(bv-gv)<0.01)s+=40;else if(Math.abs(bv-gv)/Math.max(Math.abs(bv),1)<0.1)s+=20;
-  const bd=String(b.Data||b.data||'');const gd=String(g.Data||g.data||'');
-  if(bd===gd)s+=30;else if(bd.slice(0,7)===gd.slice(0,7))s+=15;
-  const bh=String(b.Histórico||b.historico||b.Descricao||'').toLowerCase();
-  const gh=String(g.Descrição||g.descricao||g.desc||'').toLowerCase();
-  const common=bh.split(' ').filter(w=>w.length>3&&gh.includes(w)).length;
-  s+=Math.min(20,common*5);
-  return s;
-}
-function runConciliacao(){
-  const banco=concData.banco.length?concData.banco:demoData('banco');
-  const gerencial=concData.gerencial.length?concData.gerencial:demoData('gerencial');
-  const results=[];const usedG=new Set();
-  for(const b of banco){
-    let best=null,bestScore=0;
-    for(let gi=0;gi<gerencial.length;gi++){
-      if(usedG.has(gi))continue;
-      const sc=scoreMatch(b,gerencial[gi]);
-      if(sc>bestScore){bestScore=sc;best=gi;}
+
+// ── IA: ANALISA EXTRATO COM CLAUDE ───────────────
+async function runAIConciliacao(){
+  if(!concData.banco.length){alert('Importe o extrato bancário primeiro.');return;}
+  const btn=document.getElementById('btn-analisar-ia');
+  btn.disabled=true;btn.textContent='🤖 Analisando...';
+  document.getElementById('ai-progress').style.display='block';
+  document.getElementById('ai-progress-bar').style.width='15%';
+  document.getElementById('ai-progress-txt').textContent='Enviando para IA...';
+  document.getElementById('ai-key-warn').style.display='none';
+  document.getElementById('tbody-conc').innerHTML=
+    '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">🤖 IA analisando '+concData.banco.length+' lançamentos...</td></tr>';
+
+  const accountsForAI=ROWS.filter(r=>!['section','subtotal','caixa'].includes(r.type))
+    .map(r=>({id:r.id,label:r.label,tipo:r.type==='receita'?'R':r.type==='custo'?'D':r.type==='invest'?'I':'M'}));
+
+  const historicoForAI=lancamentos.slice(-40).map(l=>({
+    data:l.data,desc:l.desc||l.descricao,tipo:l.tipo,conta:l.conta,valor:l.valor
+  }));
+
+  try{
+    document.getElementById('ai-progress-bar').style.width='40%';
+    document.getElementById('ai-progress-txt').textContent='Claude analisando padrões...';
+
+    const resp=await fetch('/api/ai',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({entries:concData.banco,accounts:accountsForAI,historico:historicoForAI})
+    });
+    const data=await resp.json();
+
+    document.getElementById('ai-progress-bar').style.width='80%';
+
+    if(data.nokey){
+      document.getElementById('ai-status').textContent='⚠ Chave da IA não configurada — usando classificação automática';
+      document.getElementById('ai-status').style.color='var(--warn)';
+      document.getElementById('ai-key-warn').style.display='block';
+      _runScoreConc();return;
     }
-    const bv=parseFloat(b.Valor||b.valor||0);
-    const gv=best!==null?parseFloat(gerencial[best].Valor||gerencial[best].valor||0):0;
-    let status='miss';
-    if(best!==null&&bestScore>=80){status='ok';usedG.add(best);}
-    else if(best!==null&&bestScore>=50){status='diff';usedG.add(best);}
-    else if(best!==null&&bestScore>=30)status='dup';
-    results.push({banco:b,gerencial:best!==null?gerencial[best]:null,score:bestScore,status,bv,gv});
+    if(data.error)throw new Error(data.error);
+
+    concData.aiResults=concData.banco.map((entry,i)=>{
+      const sug=data.suggestions.find(s=>s.i===i)||null;
+      const bv=parseFloat(String(entry.Valor||entry.valor||0).replace(',','.'));
+      return{idx:i,banco:entry,bv,ai:sug,confirmado:false,
+        status:sug?(sug.confianca>=80?'alta':'revisar'):'manual'};
+    });
+
+    document.getElementById('ai-progress-bar').style.width='100%';
+    document.getElementById('ai-status').textContent=
+      `✓ IA classificou ${concData.banco.length} lançamentos`;
+    document.getElementById('ai-status').style.color='var(--ok)';
+    document.getElementById('ai-progress-txt').textContent='Concluído! Revise abaixo.';
+    document.getElementById('btn-confirmar-todos').style.display='';
+    btn.textContent='🔄 Reanalisar';btn.disabled=false;
+    filterConcAI('all',document.querySelector('.conc-stat.active'));
+
+  }catch(err){
+    document.getElementById('ai-status').textContent='❌ Erro: '+err.message;
+    document.getElementById('ai-status').style.color='var(--danger)';
+    document.getElementById('ai-progress-bar').style.background='var(--danger)';
+    _runScoreConc();
+    btn.textContent='🤖 Analisar com IA';btn.disabled=false;
   }
-  concData.results=results;
-  renderConc('all',null);
 }
-function demoData(type){
-  const items=[
-    {Data:'15/06/2026',Histórico:'PIX CLIENTE JOAO',Valor:1500,Descrição:'Recebimento João'},
-    {Data:'15/06/2026',Histórico:'POSTO SHELL',Valor:-450,Descrição:'Combustível Operacional'},
-    {Data:'16/06/2026',Histórico:'TED FORNECEDOR',Valor:-3200,Descrição:'Pagamento Fornecedor X'},
-    {Data:'17/06/2026',Histórico:'PIX GADO CORTE',Valor:25000,Descrição:'Venda Gado Corte'},
-    {Data:'18/06/2026',Histórico:'FOLHA PAGAMENTO',Valor:-8500,Descrição:'Custo Pessoal Jun'},
-    {Data:'19/06/2026',Histórico:'RACAO ANIMAL',Valor:-1200,Descrição:'Custo Zootécnico'},
-    {Data:'20/06/2026',Histórico:'PIX ARRENDAMENTO',Valor:3500,Descrição:'Arrendamento Junho'},
-  ];
-  return items.map(i=>type==='banco'?{Data:i.Data,Histórico:i.Histórico,Valor:i.Valor}:{Data:i.Data,Descrição:i.Descrição,Valor:i.Valor});
+
+// Fallback score-based quando IA não disponível
+function _runScoreConc(){
+  concData.aiResults=concData.banco.map((entry,i)=>{
+    const bv=parseFloat(String(entry.Valor||entry.valor||0).replace(',','.'));
+    const hist=String(entry.Histórico||entry.historico||'').toLowerCase();
+    let conta_id='admin',conta_label='Despesas Administrativas',tipo='D',confianca=40,motivo='Classificação automática';
+    if(bv>0){conta_id='outros_prod';conta_label='Outros Produtos';tipo='R';confianca=55;motivo='Valor positivo = Receita';}
+    if(/gado|boi|novilh|vaca|frigo/i.test(hist)&&bv>0){conta_id='gado_corte';conta_label='Gado de Corte';tipo='R';confianca=72;motivo='Histórico indica gado';}
+    if(/gado|boi|compra/i.test(hist)&&bv<0){conta_id='comp_gado';conta_label='Compra de Gado';tipo='I';confianca=68;motivo='Compra de animais';}
+    if(/salario|folha|pessoal|funcionario/i.test(hist)){conta_id='pessoal';conta_label='Custo Pessoal';tipo='D';confianca=78;motivo='Folha de pagamento';}
+    if(/combustivel|posto|gasolina|etanol|diesel/i.test(hist)){conta_id='veiculos';conta_label='Custo Veículos';tipo='D';confianca=80;motivo='Combustível';}
+    if(/racao|veter|animal|vacina|medicamento/i.test(hist)){conta_id='zoo_vet';conta_label='Custo Zootécnico (Vet)';tipo='D';confianca=75;motivo='Custo animal';}
+    if(/arrendamento|aluguel/i.test(hist)){conta_id='arrendamento';conta_label='Arrendamento';tipo='R';confianca=82;motivo='Arrendamento';}
+    if(/confinamento/i.test(hist)){conta_id='confinamento';conta_label='Confinamento';tipo='R';confianca=80;motivo='Confinamento';}
+    const ai={i,conta_id,conta_label,tipo,descricao:String(entry.Histórico||entry.historico||'').slice(0,50),confianca,motivo};
+    return{idx:i,banco:entry,bv,ai,confirmado:false,status:confianca>=80?'alta':'revisar'};
+  });
+  filterConcAI('all',null);
 }
-function filterConc(f,el){
+
+// ── FILTRO E RENDER ───────────────────────────────
+function filterConcAI(f,el){
   document.querySelectorAll('.conc-stat').forEach(s=>s.classList.remove('active'));
   if(el)el.classList.add('active');
-  renderConc(f,el);
+  renderConcAI(f);
 }
-function renderConc(filter){
-  const res=concData.results;
-  const ok=res.filter(r=>r.status==='ok'),diff=res.filter(r=>r.status==='diff'),dup=res.filter(r=>r.status==='dup'),miss=res.filter(r=>r.status==='miss');
+
+function renderConcAI(filter){
+  const res=concData.aiResults||[];
+  const conf=res.filter(r=>r.confirmado);
+  const alta=res.filter(r=>!r.confirmado&&r.status==='alta');
+  const rev=res.filter(r=>!r.confirmado&&r.status==='revisar');
+  const man=res.filter(r=>!r.ai);
   document.getElementById('cs-total').textContent=res.length;
-  document.getElementById('cs-ok').textContent=ok.length;
-  document.getElementById('cs-diff').textContent=diff.length;
-  document.getElementById('cs-dup').textContent=dup.length;
-  document.getElementById('cs-miss').textContent=miss.length;
-  const show=filter==='ok'?ok:filter==='diff'?diff:filter==='dup'?dup:filter==='miss'?miss:res;
-  const sLbl={ok:'✓ Conciliado',diff:'⚠ Divergência',dup:'⊕ Duplicado',miss:'✗ Não encontrado'};
-  const sBdg={ok:'badge-green',diff:'badge-yellow',dup:'badge-purple',miss:'badge-red'};
-  const tbody=document.getElementById('tbody-conc');
-  tbody.innerHTML=show.length?show.map(r=>`
-    <tr>
-      <td>${r.banco.Data||r.banco.data||'—'}</td>
-      <td>${r.banco.Histórico||r.banco.historico||r.banco.Descricao||'—'}</td>
-      <td class="td-num ${r.bv<0?'color-danger':'color-ok'}">${fmtFull(r.bv)}</td>
-      <td>${r.gerencial?r.gerencial.Descrição||r.gerencial.descricao||'—':'—'}</td>
-      <td class="td-num ${r.gv<0?'color-danger':'color-ok'}">${r.gerencial?fmtFull(r.gv):'—'}</td>
-      <td style="font-weight:700;font-size:12px;color:${r.score>=80?'var(--ok)':r.score>=50?'var(--warn)':'var(--danger)'}">${r.score}%</td>
-      <td><span class="badge ${sBdg[r.status]}">${sLbl[r.status]}</span></td>
-      <td><button class="btn btn-outline btn-sm">Ajustar</button></td>
-    </tr>`).join('')
-    :'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Nenhum resultado nesta categoria</td></tr>';
+  document.getElementById('cs-ok').textContent=conf.length;
+  document.getElementById('cs-diff').textContent=alta.length;
+  document.getElementById('cs-dup').textContent=rev.length;
+  document.getElementById('cs-miss').textContent=man.length;
+  const show=filter==='confirmado'?conf:filter==='alta'?alta:filter==='revisar'?rev:filter==='manual'?man:res;
+  const tipoBdg={R:'badge-green',D:'badge-red',I:'badge-yellow',M:'badge-purple'};
+  const tipoLbl={R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
+  document.getElementById('tbody-conc').innerHTML=show.length?show.map(r=>{
+    const ai=r.ai;
+    const conf=ai?ai.confianca:0;
+    const confColor=conf>=80?'var(--ok)':conf>=60?'var(--warn)':'var(--danger)';
+    const confBar=`<div style="display:inline-flex;align-items:center;gap:5px">
+      <div style="width:36px;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div style="width:${conf}%;height:100%;background:${confColor};border-radius:3px"></div>
+      </div>
+      <span style="font-size:10px;font-weight:700;color:${confColor}">${conf}%</span></div>`;
+    return`<tr style="${r.confirmado?'opacity:.65;background:#f0faf4':''}">
+      <td style="white-space:nowrap;font-size:11px">${r.banco.Data||r.banco.data||'—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="${r.banco.Histórico||r.banco.historico||''}">${r.banco.Histórico||r.banco.historico||r.banco.Descricao||'—'}</td>
+      <td class="td-num ${r.bv<0?'color-danger':'color-ok'}" style="font-size:11px;font-weight:600">${fmtFull(r.bv)}</td>
+      <td style="font-size:11px">${ai?`<span style="font-weight:500">${ai.descricao}</span><br><small style="color:var(--muted);font-size:9px">${ai.motivo}</small>`:'—'}</td>
+      <td style="font-size:10px;font-weight:500;max-width:120px">${ai?ai.conta_label:'—'}</td>
+      <td>${ai?`<span class="badge ${tipoBdg[ai.tipo]||'badge-red'}" style="font-size:9px">${tipoLbl[ai.tipo]||ai.tipo}</span>`:'—'}</td>
+      <td style="text-align:center">${confBar}</td>
+      <td style="white-space:nowrap">${r.confirmado
+        ?'<span style="color:var(--ok);font-size:11px;font-weight:600">✓ Confirmado</span>'
+        :`<button class="btn btn-primary btn-sm" onclick="confirmarConc(${r.idx})" title="Confirmar e criar lançamento" style="margin-right:3px">✓</button><button class="btn btn-outline btn-sm" onclick="ajustarConc(${r.idx})" title="Ajustar classificação">✏</button>`
+      }</td></tr>`;
+  }).join('')
+  :'<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Nenhum item nesta categoria</td></tr>';
+}
+
+// ── CONFIRMAR (cria lançamento) ───────────────────
+async function confirmarConc(idx){
+  const item=(concData.aiResults||[])[idx];
+  if(!item||!item.ai)return;
+  const bv=item.bv;
+  const dataRaw=item.banco.Data||item.banco.data||new Date().toISOString().slice(0,10);
+  const dataFmt=dataRaw.includes('/')?dataRaw.split('/').reverse().join('-'):dataRaw;
+  const lanc={
+    data:dataFmt,desc:item.ai.descricao,conta:item.ai.conta_label,cc:'',
+    tipo:item.ai.tipo,banco:'Conciliação',valor:bv,obs:String(item.banco.Histórico||item.banco.historico||'').slice(0,100),status:'conciliado'
+  };
+  setSaving();
+  if(online){
+    const{data:d}=await sb.from('lancamentos').insert([{
+      data:lanc.data,descricao:lanc.desc,conta:lanc.conta,centro_custo:lanc.cc,
+      tipo:lanc.tipo,banco:lanc.banco,valor:lanc.valor,obs:lanc.obs,status:lanc.status,
+      ano:parseInt(lanc.data.slice(0,4)),mes:parseInt(lanc.data.slice(5,7)),dia:parseInt(lanc.data.slice(8,10))
+    }]).select();
+    if(d&&d[0])lanc.id=d[0].id;
+  }else lanc.id=Date.now()+idx;
+  lancamentos.push(lanc);
+  if(!online)localStorage.setItem('hrLanc',JSON.stringify(lancamentos));
+  concData.aiResults[idx].confirmado=true;
+  setOk();renderConcAI('all');renderRecentLanc();
+}
+
+// ── CONFIRMAR TODOS (alta confiança) ─────────────
+async function confirmarTodos(){
+  const pendentes=(concData.aiResults||[]).filter(r=>!r.confirmado&&r.status==='alta');
+  if(!pendentes.length){alert('Nenhum item de alta confiança pendente.');return;}
+  if(!confirm(`Confirmar ${pendentes.length} lançamentos de alta confiança?`))return;
+  for(const r of pendentes)await confirmarConc(r.idx);
+  alert(`✓ ${pendentes.length} lançamentos criados com sucesso!`);
+}
+
+// ── AJUSTAR CLASSIFICAÇÃO ─────────────────────────
+function ajustarConc(idx){
+  const item=(concData.aiResults||[])[idx];if(!item)return;
+  document.getElementById('adj-idx').value=idx;
+  document.getElementById('adj-desc').value=item.ai?item.ai.descricao:'';
+  document.getElementById('adj-conta').value=item.ai?item.ai.conta_id:'';
+  document.getElementById('adj-tipo').value=item.ai?item.ai.tipo:'D';
+  openModal('modal-ajuste');
+}
+async function salvarAjuste(){
+  const idx=parseInt(document.getElementById('adj-idx').value);
+  const desc=document.getElementById('adj-desc').value.trim();
+  const contaId=document.getElementById('adj-conta').value;
+  const tipo=document.getElementById('adj-tipo').value;
+  if(!desc||!contaId){alert('Preencha descrição e conta.');return;}
+  const row=ROWS.find(r=>r.id===contaId);
+  const contaLabel=row?row.label:contaId;
+  if(!concData.aiResults[idx].ai)concData.aiResults[idx].ai={};
+  Object.assign(concData.aiResults[idx].ai,{
+    descricao:desc,conta_id:contaId,conta_label:contaLabel,tipo,confianca:100,motivo:'Ajustado manualmente'
+  });
+  concData.aiResults[idx].status='alta';
+  closeModal('modal-ajuste');
+  await confirmarConc(idx);
 }
 
 // ══════════════════════════════════════════════════
@@ -1462,11 +1630,23 @@ function exportLancXLSX(){
   XLSX.writeFile(wb,'HR_Lancamentos.xlsx');
 }
 function exportConcXLSX(){
-  const hdr=['Data Banco','Histórico','Valor Banco','Desc. Gerencial','Valor Gerencial','Score','Status'];
-  const rows=[hdr,...concData.results.map(r=>[r.banco.Data||'',r.banco.Histórico||'',r.bv,r.gerencial?r.gerencial.Descrição||'':'',r.gv,r.score+'%',r.status])];
+  const res=concData.aiResults||concData.results||[];
+  if(!res.length){alert('Nenhum dado de conciliação para exportar.');return;}
+  const tipoLbl={R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
+  const hdr=['Data Banco','Histórico Banco','Valor','Conta Sugerida','Tipo','Confiança %','Confirmado','Descrição Gerencial'];
+  const rows=[hdr,...res.map(r=>[
+    r.banco.Data||r.banco.data||'',
+    r.banco.Histórico||r.banco.historico||r.banco.Descricao||'',
+    r.bv||0,
+    r.ai?r.ai.conta_label:r.gerencial?r.gerencial.Descrição||'':'',
+    r.ai?tipoLbl[r.ai.tipo]||r.ai.tipo:'',
+    r.ai?r.ai.confianca:r.score||0,
+    r.confirmado?'Sim':'Não',
+    r.ai?r.ai.descricao:''
+  ])];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Conciliação');
-  XLSX.writeFile(wb,'HR_Conciliacao.xlsx');
+  XLSX.writeFile(wb,'HR_Conciliacao_IA.xlsx');
 }
 function exportGenXLSX(t){alert('Relatório exportado ✓');}
 
