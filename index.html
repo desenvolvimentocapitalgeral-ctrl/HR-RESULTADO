@@ -309,6 +309,8 @@ select.ctrl:focus{border-color:var(--g3)}
     <div class="toolbar">
       <select class="ctrl" id="sel-ano" onchange="renderFCAno()"><option>2026</option><option>2025</option></select>
       <button class="btn btn-outline btn-sm" onclick="exportFCAnoXLSX()">⬇ Excel Anual</button>
+      <button class="btn btn-gold btn-sm" onclick="document.getElementById('imp-orcamento').click()" title="Importa seu Excel original: Coluna A = Grupo, colunas seguintes = Meses 1–12">⬆ Importar Orçamento Excel</button>
+      <input type="file" id="imp-orcamento" accept=".xlsx" style="display:none" onchange="importOrcamentoExcel(this)"/>
     </div>
     <div class="fc-wrap"><table class="fc-table" id="fc-ano-table"></table></div>
   </div>
@@ -1313,6 +1315,92 @@ async function importFluxoXLSX(inp){
     const msg=skipped>0
       ? `✓ ${saved} células importadas.\n⚠ ${skipped} linhas não reconhecidas (verifique os nomes das categorias).`
       : `✓ ${saved} células importadas com sucesso!`;
+    alert(msg);
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+// Importa o Excel original do usuário (Grupo | Meses 1-12)
+async function importOrcamentoExcel(inp){
+  const f=inp.files[0]; if(!f) return;
+  const year=parseInt(document.getElementById('sel-ano').value);
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const sheetName=wb.SheetNames.find(n=>/fluxo/i.test(n)&&/m[eê]/i.test(n))||wb.SheetNames[0];
+    const ws=wb.Sheets[sheetName];
+    const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(!aoa||aoa.length<2){alert('Planilha vazia ou inválida.');inp.value='';return;}
+    let hdrIdx=0,monthCols=[];
+    for(let r=0;r<Math.min(5,aoa.length);r++){
+      const row=aoa[r];const mc=[];
+      for(let c=1;c<row.length;c++){
+        const v=String(row[c]).trim();const n=parseInt(v);
+        if(!isNaN(n)&&n>=1&&n<=12&&String(n)===v) mc.push({colIdx:c,month:n});
+      }
+      if(mc.length>=5){hdrIdx=r;monthCols=mc;break;}
+    }
+    if(monthCols.length===0){
+      alert('Não encontrei colunas de meses (1–12).\nVerifique se está usando o arquivo correto.');
+      inp.value='';return;
+    }
+    const GMAP=[
+      [['gado de corte'],                    'gado_corte'],
+      [['gado p.o','gado po','gado puro'],   'gado_po'],
+      [['confinamento'],                      'confinamento'],
+      [['arrendamento'],                      'arrendamento'],
+      [['outros produto'],                    'outros_prod'],
+      [['impostos','taxas sobre venda'],      'impostos'],
+      [['custo zootecnico','zootecnico'],     'zoo_vet'],
+      [['veiculo'],                           'veiculos'],
+      [['conserva'],                          'conserv'],
+      [['pessoal'],                           'pessoal'],
+      [['despesa admin','administrativa'],    'admin'],
+      [['compra de animais','compra de gado'],'comp_gado'],
+      [['compra de maquinas','equipamento'],  'maquinas'],
+      [['infraestrutura'],                    'infra'],
+    ];
+    function findId(grupo){
+      const g=String(grupo).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').trim();
+      for(const[kws,id]of GMAP){if(kws.some(kw=>g.includes(kw)))return id;}
+      return null;
+    }
+    const SKIP=/^(qtd|media|preco|custo por|#n|#div|grupo$)/i;
+    const totals={};const corrupt=new Set();
+    for(let r=hdrIdx+1;r<aoa.length;r++){
+      const row=aoa[r];
+      const grupo=String(row[0]||'').trim();
+      if(!grupo||SKIP.test(grupo)||grupo==='-')continue;
+      const rowId=findId(grupo);if(!rowId)continue;
+      for(const{colIdx,month}of monthCols){
+        const raw=row[colIdx];
+        if(raw===''||raw===null||raw===undefined)continue;
+        const val=typeof raw==='number'?raw:parseFloat(String(raw).replace(',','.'));
+        if(isNaN(val)||val===0)continue;
+        if(Math.abs(val)>50000000){corrupt.add(grupo+' — Mês '+month);continue;}
+        const key=rowId+'|'+month;
+        totals[key]=(totals[key]||0)+val;
+      }
+    }
+    let saved=0;setSaving();
+    for(const[key,val]of Object.entries(totals)){
+      const[rowId,ms]=key.split('|');const month=parseInt(ms);
+      setVal(year,month,rowId,1,val);
+      if(online)await sb.from('fluxo_caixa').upsert(
+        {ano:year,mes:month,dia:1,row_id:rowId,valor:val},
+        {onConflict:'ano,mes,dia,row_id'}
+      );
+      saved++;
+    }
+    if(!online)localStorage.setItem('hrFluxo',JSON.stringify(fluxoCache));
+    setOk();renderFCAno();inp.value='';
+    let msg='✓ '+saved+' valores importados → '+year+'\nAba: "'+sheetName+'"\n';
+    if(corrupt.size>0){
+      msg+='\n⚠ '+corrupt.size+' valores ignorados (erro de fórmula no Excel):\n';
+      msg+=[...corrupt].slice(0,6).join('\n');
+      if(corrupt.size>6)msg+='\n... e mais '+(corrupt.size-6);
+      msg+='\n\nDigite esses valores manualmente no Fluxo de Caixa Mês.';
+    }
     alert(msg);
   };
   reader.readAsArrayBuffer(f);
