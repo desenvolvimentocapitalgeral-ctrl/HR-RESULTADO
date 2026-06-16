@@ -157,6 +157,11 @@ select.ctrl:focus{border-color:var(--g3)}
 .spinner{display:inline-block;width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--g3);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 #btn-analisar-ia:disabled{opacity:.5;cursor:not-allowed}
 .td-num{text-align:right;font-variant-numeric:tabular-nums}
+.cor-preset{width:26px;height:26px;border-radius:6px;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);transition:.15s}
+.cor-preset:hover{transform:scale(1.12)}
+.ia-key-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px}
+.ia-input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;font-family:monospace}
+.ia-input:focus{border-color:var(--g3)}
 .upload-zone strong{color:var(--g2)}
 
 /* MISC */
@@ -180,14 +185,15 @@ select.ctrl:focus{border-color:var(--g3)}
 <!-- SIDEBAR -->
 <aside id="sidebar">
   <div class="logo-area">
-    <div class="logo-wrap">
-      <svg class="logo-icon" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+    <div class="logo-wrap" id="logo-wrap">
+      <svg class="logo-icon" id="logo-default" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
         <rect width="38" height="38" rx="8" fill="#C9A227"/>
         <text x="4" y="27" font-family="Archivo,sans-serif" font-weight="800" font-size="21" fill="#0F2D1F">HR</text>
         <path d="M30 11 C32 9 34 10 33 13 C32 15 30 15 29 13Z" fill="#0F2D1F" opacity=".5"/>
         <path d="M24 11 C22 9 20 10 21 13 C22 15 24 15 25 13Z" fill="#0F2D1F" opacity=".5"/>
       </svg>
-      <div class="logo-text">HR RESULTADO<span>Sistema Financeiro</span></div>
+      <img id="logo-empresa" style="display:none;width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0" alt="logo"/>
+      <div class="logo-text" id="logo-text">HR RESULTADO<span id="logo-sub">Sistema Financeiro</span></div>
     </div>
   </div>
   <nav>
@@ -225,6 +231,11 @@ select.ctrl:focus{border-color:var(--g3)}
     <div class="nav-item" onclick="goTo('bancos',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
       Contas Bancárias
+    </div>
+    <div class="nav-section">Sistema</div>
+    <div class="nav-item" onclick="goTo('admin',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Portal Admin
     </div>
   </nav>
   <div class="sidebar-footer">
@@ -483,6 +494,106 @@ select.ctrl:focus{border-color:var(--g3)}
   </div>
 </div>
 
+<!-- ═══ PORTAL ADMIN ═══ -->
+<section class="screen" id="screen-admin">
+  <div class="page-header">
+    <div><h1>Portal Admin</h1><p>Identidade visual e chaves de Inteligência Artificial</p></div>
+  </div>
+
+  <!-- IDENTIDADE VISUAL -->
+  <div class="card section-gap">
+    <div class="card-title">🎨 Identidade Visual — <span id="admin-emp-nome" style="color:var(--g3)"></span></div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px">A logo e a cor abaixo se aplicam à empresa ativa. Cada empresa pode ter a sua.</p>
+    <div class="grid-2">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px">Logo da Empresa</label>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="admin-logo-preview" style="width:72px;height:72px;border-radius:12px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg);flex-shrink:0">
+            <span style="font-size:24px;color:var(--muted)">🏢</span>
+          </div>
+          <div>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('admin-logo-file').click()">Enviar Logo</button>
+            <button class="btn btn-outline btn-sm" onclick="removerLogo()" style="color:var(--danger);border-color:var(--danger)">Remover</button>
+            <input type="file" id="admin-logo-file" accept="image/*" style="display:none" onchange="uploadLogo(this)"/>
+            <p style="font-size:10px;color:var(--muted);margin-top:6px">PNG ou JPG · máx 500KB · quadrada</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px">Cor Principal</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input type="color" id="admin-cor" value="#1B4332" onchange="previewCor(this.value)" style="width:48px;height:38px;border:1px solid var(--border);border-radius:8px;cursor:pointer;padding:2px"/>
+          <div id="cor-presets" style="display:flex;gap:6px">
+            <span class="cor-preset" data-cor="#1B4332" style="background:#1B4332" onclick="setCorPreset('#1B4332')" title="Verde"></span>
+            <span class="cor-preset" data-cor="#1E3A8A" style="background:#1E3A8A" onclick="setCorPreset('#1E3A8A')" title="Azul"></span>
+            <span class="cor-preset" data-cor="#7C2D12" style="background:#7C2D12" onclick="setCorPreset('#7C2D12')" title="Marrom"></span>
+            <span class="cor-preset" data-cor="#4C1D95" style="background:#4C1D95" onclick="setCorPreset('#4C1D95')" title="Roxo"></span>
+            <span class="cor-preset" data-cor="#831843" style="background:#831843" onclick="setCorPreset('#831843')" title="Vinho"></span>
+            <span class="cor-preset" data-cor="#0F766E" style="background:#0F766E" onclick="setCorPreset('#0F766E')" title="Teal"></span>
+          </div>
+        </div>
+        <p style="font-size:10px;color:var(--muted);margin-top:8px">A cor é aplicada no menu, botões e cabeçalhos.</p>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-start">
+      <button class="btn btn-primary" onclick="salvarVisual()">💾 Salvar Identidade Visual</button>
+    </div>
+  </div>
+
+  <!-- CHAVES DE IA -->
+  <div class="card">
+    <div class="card-title">🤖 Chaves de Inteligência Artificial</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px">
+      Configure ao menos uma chave para a IA classificar suas conciliações. Todas têm <strong>plano gratuito</strong>.
+      Sem nenhuma chave, o sistema usa a classificação automática por palavras-chave.
+    </p>
+
+    <div class="form-row">
+      <label>Motor de IA preferido</label>
+      <select id="cfg-engine">
+        <option value="auto">Automático (usa a primeira chave disponível)</option>
+        <option value="gemini">Google Gemini (grátis)</option>
+        <option value="groq">Groq · Llama 3.3 (grátis)</option>
+        <option value="openrouter">OpenRouter · Llama (grátis)</option>
+        <option value="keyword">Apenas palavras-chave (sem IA externa)</option>
+      </select>
+    </div>
+
+    <div class="ia-key-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong style="font-size:12px;color:var(--g2)">Google Gemini</strong>
+        <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size:11px;color:var(--g3)">Pegar chave grátis →</a>
+      </div>
+      <input type="password" id="cfg-gemini" placeholder="AIza..." class="ia-input"/>
+    </div>
+
+    <div class="ia-key-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong style="font-size:12px;color:var(--g2)">Groq (rápido e grátis)</strong>
+        <a href="https://console.groq.com/keys" target="_blank" style="font-size:11px;color:var(--g3)">Pegar chave grátis →</a>
+      </div>
+      <input type="password" id="cfg-groq" placeholder="gsk_..." class="ia-input"/>
+    </div>
+
+    <div class="ia-key-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong style="font-size:12px;color:var(--g2)">OpenRouter</strong>
+        <a href="https://openrouter.ai/keys" target="_blank" style="font-size:11px;color:var(--g3)">Pegar chave grátis →</a>
+      </div>
+      <input type="password" id="cfg-openrouter" placeholder="sk-or-..." class="ia-input"/>
+    </div>
+
+    <p style="font-size:10px;color:var(--warn);margin:10px 0">
+      ⚠ As chaves ficam salvas no seu banco de dados na nuvem. Use chaves do plano gratuito.
+    </p>
+    <div class="modal-footer" style="justify-content:flex-start">
+      <button class="btn btn-primary" onclick="salvarConfigIA()">💾 Salvar Chaves de IA</button>
+      <button class="btn btn-outline" onclick="testarIA()">🧪 Testar IA</button>
+    </div>
+    <p id="ia-test-result" style="font-size:12px;margin-top:8px"></p>
+  </div>
+</section>
+
 <!-- ═══ RELATÓRIOS ═══ -->
 <section class="screen" id="screen-relatorios">
   <div class="page-header">
@@ -626,6 +737,7 @@ let charts      = {};
 let saveTimer   = null;
 let empresas    = [];   // lista de empresas
 let empresaAtual= null; // id da empresa ativa
+let iaConfig    = {engine:'auto', gemini:'', groq:'', openrouter:''};
 
 // Chaves localStorage por empresa (modo offline)
 function lkLanc()  { return 'hrLanc_'  + (empresaAtual||'0'); }
@@ -723,6 +835,7 @@ function goTo(id, el) {
   if (id === 'fluxo')       renderFCMes();
   if (id === 'lancamentos') renderLanc();
   if (id === 'empresas')    renderEmpresas();
+  if (id === 'admin')       renderAdmin();
   if (id === 'planocontas') renderPC();
   if (id === 'bancos')      renderBancos();
 }
@@ -1075,14 +1188,29 @@ async function runAIConciliacao(){
     data:l.data,desc:l.desc||l.descricao,tipo:l.tipo,conta:l.conta,valor:l.valor
   }));
 
+  // Modo "só palavras-chave": nem chama a IA externa
+  if(iaConfig.engine==='keyword'){
+    document.getElementById('ai-status').textContent='✓ Classificação automática (palavras-chave)';
+    document.getElementById('ai-status').style.color='var(--ok)';
+    document.getElementById('ai-progress').style.display='none';
+    _runScoreConc();
+    document.getElementById('btn-confirmar-todos').style.display='';
+    btn.textContent='🔄 Reanalisar';btn.disabled=false;
+    return;
+  }
+
   try{
     document.getElementById('ai-progress-bar').style.width='40%';
-    document.getElementById('ai-progress-txt').textContent='Claude analisando padrões...';
+    document.getElementById('ai-progress-txt').textContent='IA analisando padrões...';
 
     const resp=await fetch('/api/ai',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({entries:concData.banco,accounts:accountsForAI,historico:historicoForAI})
+      body:JSON.stringify({
+        entries:concData.banco,accounts:accountsForAI,historico:historicoForAI,
+        engine:iaConfig.engine,
+        keys:{gemini:iaConfig.gemini,groq:iaConfig.groq,openrouter:iaConfig.openrouter}
+      })
     });
     const data=await resp.json();
 
@@ -1713,7 +1841,7 @@ function exportGenXLSX(t){alert('Relatório exportado ✓');}
 async function loadEmpresas(){
   if(online){
     const{data}=await sb.from('empresas').select('*').order('id',{ascending:true});
-    empresas=(data||[]).map(e=>({id:e.id,nome:e.nome,cnpj:e.cnpj,resp:e.responsavel,obs:e.obs,ativa:e.ativa!==false}));
+    empresas=(data||[]).map(e=>({id:e.id,nome:e.nome,cnpj:e.cnpj,resp:e.responsavel,obs:e.obs,ativa:e.ativa!==false,logo:e.logo||'',cor:e.cor||''}));
   }else{
     empresas=JSON.parse(localStorage.getItem('hrEmpresas')||'[]');
   }
@@ -1732,6 +1860,7 @@ async function loadEmpresas(){
   empresaAtual=empresas.find(e=>e.id===saved)?saved:empresas[0].id;
   localStorage.setItem('hrEmpresaAtual',empresaAtual);
   renderEmpresaSelector();
+  applyEmpresaVisual();
 }
 
 function renderEmpresaSelector(){
@@ -1742,6 +1871,8 @@ function renderEmpresaSelector(){
 async function trocarEmpresa(id){
   empresaAtual=parseInt(id);
   localStorage.setItem('hrEmpresaAtual',empresaAtual);
+  renderEmpresaSelector();
+  applyEmpresaVisual();
   // Recarrega todos os dados da nova empresa
   fluxoCache={};
   setSaving();
@@ -1857,6 +1988,148 @@ async function excluirEmpresa(id){
 }
 
 // ══════════════════════════════════════════════════
+// PORTAL ADMIN — IDENTIDADE VISUAL
+// ══════════════════════════════════════════════════
+function hexToRgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function rgbToHex(r,g,b){const c=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');return '#'+c(r)+c(g)+c(b);}
+function shade(hex,pct){const[r,g,b]=hexToRgb(hex);const f=pct<0?0:255;const p=Math.abs(pct);return rgbToHex(r+(f-r)*p,g+(f-g)*p,b+(f-b)*p);}
+
+// Aplica uma cor base derivando os tons do tema (--g1 escuro … --g5 claro)
+function applyTheme(hex){
+  if(!hex) hex='#1B4332';
+  const root=document.documentElement.style;
+  root.setProperty('--g1', shade(hex,-0.35));
+  root.setProperty('--g2', hex);
+  root.setProperty('--g3', shade(hex,0.18));
+  root.setProperty('--g4', shade(hex,0.40));
+  root.setProperty('--g5', shade(hex,0.62));
+}
+
+// Aplica logo + cor da empresa ativa em toda a interface
+function applyEmpresaVisual(){
+  const e=empresas.find(x=>x.id===empresaAtual);
+  if(!e)return;
+  applyTheme(e.cor||'#1B4332');
+  const img=document.getElementById('logo-empresa');
+  const def=document.getElementById('logo-default');
+  const txt=document.getElementById('logo-text');
+  const sub=document.getElementById('logo-sub');
+  if(e.logo){img.src=e.logo;img.style.display='';def.style.display='none';}
+  else{img.style.display='none';def.style.display='';}
+  if(txt&&sub){txt.childNodes[0].nodeValue=e.nome.toUpperCase().slice(0,18);sub.textContent='Sistema Financeiro';}
+}
+
+function renderAdmin(){
+  const e=empresas.find(x=>x.id===empresaAtual);
+  document.getElementById('admin-emp-nome').textContent=e?e.nome:'';
+  // Logo preview
+  const prev=document.getElementById('admin-logo-preview');
+  if(e&&e.logo){prev.innerHTML=`<img src="${e.logo}" style="width:100%;height:100%;object-fit:cover"/>`;}
+  else{prev.innerHTML='<span style="font-size:24px;color:var(--muted)">🏢</span>';}
+  // Cor
+  document.getElementById('admin-cor').value=(e&&e.cor)||'#1B4332';
+  // Config IA
+  document.getElementById('cfg-engine').value=iaConfig.engine||'auto';
+  document.getElementById('cfg-gemini').value=iaConfig.gemini||'';
+  document.getElementById('cfg-groq').value=iaConfig.groq||'';
+  document.getElementById('cfg-openrouter').value=iaConfig.openrouter||'';
+}
+
+function uploadLogo(inp){
+  const f=inp.files[0];if(!f)return;
+  if(f.size>500*1024){alert('Logo muito grande (máx 500KB). Reduza a imagem.');inp.value='';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const e2=empresas.find(x=>x.id===empresaAtual);
+    if(e2)e2.logo=e.target.result;
+    document.getElementById('admin-logo-preview').innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/>`;
+  };
+  reader.readAsDataURL(f);
+}
+function removerLogo(){
+  const e=empresas.find(x=>x.id===empresaAtual);if(e)e.logo='';
+  document.getElementById('admin-logo-preview').innerHTML='<span style="font-size:24px;color:var(--muted)">🏢</span>';
+}
+function previewCor(hex){applyTheme(hex);}
+function setCorPreset(hex){document.getElementById('admin-cor').value=hex;applyTheme(hex);}
+
+async function salvarVisual(){
+  const e=empresas.find(x=>x.id===empresaAtual);if(!e)return;
+  e.cor=document.getElementById('admin-cor').value;
+  setSaving();
+  if(online){
+    await sb.from('empresas').update({logo:e.logo||null,cor:e.cor}).eq('id',e.id);
+  }else{
+    localStorage.setItem('hrEmpresas',JSON.stringify(empresas));
+  }
+  setOk();
+  applyEmpresaVisual();
+  alert('✓ Identidade visual salva!');
+}
+
+// ══════════════════════════════════════════════════
+// PORTAL ADMIN — CHAVES DE IA
+// ══════════════════════════════════════════════════
+async function loadConfig(){
+  if(online){
+    const{data}=await sb.from('configuracoes').select('*').eq('id',1).maybeSingle();
+    if(data)iaConfig={engine:data.ia_engine||'auto',gemini:data.gemini_key||'',groq:data.groq_key||'',openrouter:data.openrouter_key||''};
+  }else{
+    const s=localStorage.getItem('hrIAConfig');
+    if(s)iaConfig=JSON.parse(s);
+  }
+}
+async function salvarConfigIA(){
+  iaConfig={
+    engine:document.getElementById('cfg-engine').value,
+    gemini:document.getElementById('cfg-gemini').value.trim(),
+    groq:document.getElementById('cfg-groq').value.trim(),
+    openrouter:document.getElementById('cfg-openrouter').value.trim()
+  };
+  setSaving();
+  if(online){
+    await sb.from('configuracoes').upsert({
+      id:1,ia_engine:iaConfig.engine,gemini_key:iaConfig.gemini,
+      groq_key:iaConfig.groq,openrouter_key:iaConfig.openrouter,updated_at:new Date().toISOString()
+    },{onConflict:'id'});
+  }else{
+    localStorage.setItem('hrIAConfig',JSON.stringify(iaConfig));
+  }
+  setOk();
+  alert('✓ Chaves de IA salvas!');
+}
+async function testarIA(){
+  const el=document.getElementById('ia-test-result');
+  el.textContent='🧪 Testando...';el.style.color='var(--muted)';
+  // Lê os valores atuais dos campos (sem salvar/alertar)
+  const eng=document.getElementById('cfg-engine').value;
+  const k={
+    gemini:document.getElementById('cfg-gemini').value.trim(),
+    groq:document.getElementById('cfg-groq').value.trim(),
+    openrouter:document.getElementById('cfg-openrouter').value.trim()
+  };
+  if(eng==='keyword'){el.textContent='✓ Modo palavras-chave ativo (não usa IA externa).';el.style.color='var(--ok)';return;}
+  try{
+    const resp=await fetch('/api/ai',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        engine:eng,
+        keys:k,
+        accounts:ROWS.filter(r=>!['section','subtotal','caixa'].includes(r.type)).map(r=>({id:r.id,label:r.label,tipo:'D'})),
+        historico:[],
+        entries:[{Data:'01/06/2026',Histórico:'PIX POSTO SHELL COMBUSTIVEL',Valor:-450}]
+      })
+    });
+    const data=await resp.json();
+    if(data.nokey){el.textContent='⚠ Nenhuma chave configurada — defina ao menos uma acima.';el.style.color='var(--warn)';return;}
+    if(data.error){el.textContent='❌ '+data.error+(data.detail?' · '+String(data.detail).slice(0,120):'');el.style.color='var(--danger)';return;}
+    const s=data.suggestions&&data.suggestions[0];
+    el.textContent='✓ Funcionou! Motor: '+data.engine+'. Exemplo classificado como: '+(s?s.conta_label+' ('+s.tipo+')':'—');
+    el.style.color='var(--ok)';
+  }catch(err){el.textContent='❌ Erro: '+err.message;el.style.color='var(--danger)';}
+}
+
+// ══════════════════════════════════════════════════
 // BANNER DE CONFIGURAÇÃO
 // ══════════════════════════════════════════════════
 function renderSetupBanner(configured){
@@ -1883,6 +2156,7 @@ function renderSetupBanner(configured){
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('f-data').value = new Date().toISOString().slice(0,10);
   await initSupabase();
+  await loadConfig();
   await loadEmpresas();
   await loadLancamentos();
   renderSetupBanner(online);
