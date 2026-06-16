@@ -527,18 +527,18 @@ let saveTimer   = null;
 // SUPABASE INIT
 // ══════════════════════════════════════════════════
 async function initSupabase() {
+  const FALLBACK_URL = 'https://vjwpwxutytadfvkbpabv.supabase.co';
+  const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqd3B3eHV0eXRhZGZ2a2JwYWJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NTU0MTEsImV4cCI6MjA5NzEzMTQxMX0.QYbAURROlVeoqzTaBMS3lC9wn_KLTCIKYQlI7b2l3h8';
   try {
-    const cfg = await fetch('/api/config').then(r => r.json());
-    if (cfg.url && cfg.key) {
-      const { createClient } = supabase;
-      sb = createClient(cfg.url, cfg.key);
-      online = true;
-      setSyncStatus('ok','● Nuvem');
-      document.getElementById('sb-mode').textContent = '● Nuvem ativa';
-      document.getElementById('sb-mode').style.color = 'var(--gold2)';
-    } else {
-      setSyncStatus('offline','● Modo local');
-    }
+    const cfg = await fetch('/api/config').then(r => r.json()).catch(() => ({}));
+    const url = (cfg.url && cfg.url.length > 10) ? cfg.url : FALLBACK_URL;
+    const key = (cfg.key && cfg.key.length > 10) ? cfg.key : FALLBACK_KEY;
+    const { createClient } = supabase;
+    sb = createClient(url, key);
+    online = true;
+    setSyncStatus('ok','● Nuvem');
+    document.getElementById('sb-mode').textContent = '● Nuvem ativa';
+    document.getElementById('sb-mode').style.color = 'var(--gold2)';
   } catch(e) {
     setSyncStatus('offline','● Modo local');
   }
