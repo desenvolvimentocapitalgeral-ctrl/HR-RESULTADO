@@ -106,6 +106,7 @@ nav{flex:1;padding:10px 0}
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar-left{flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 select.ctrl{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:var(--text);outline:none;cursor:pointer}
+select.ctrl-sm{padding:3px 6px;border-radius:5px}
 select.ctrl:focus{border-color:var(--g3)}
 
 /* BADGE */
@@ -347,19 +348,22 @@ select.ctrl:focus{border-color:var(--g3)}
     <div><h1>Lançamentos</h1><p id="lanc-count">0 registros</p></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline btn-sm" onclick="exportLancXLSX()">⬇ Excel</button>
+      <button class="btn btn-gold btn-sm" onclick="abrirImportExtrato()">⬆ Importar Extrato</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-lancamento')">+ Novo</button>
     </div>
   </div>
   <div class="toolbar section-gap">
     <div class="toolbar-left">
-      <select class="ctrl" id="f-tipo-fil"><option value="">Todos os Tipos</option><option value="R">Receita</option><option value="D">Despesa</option><option value="I">Investimento</option><option value="M">Mútuo</option></select>
-      <select class="ctrl" id="f-mes-lanc"><option value="">Todos os Meses</option><option value="01">Jan</option><option value="02">Fev</option><option value="03">Mar</option><option value="04">Abr</option><option value="05">Mai</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Ago</option><option value="09">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option></select>
+      <select class="ctrl" id="f-tipo-fil" onchange="renderLanc()"><option value="">Todos os Tipos</option><option value="R">Receita</option><option value="D">Despesa</option><option value="I">Investimento</option><option value="M">Mútuo</option></select>
+      <select class="ctrl" id="f-mes-lanc" onchange="renderLanc()"><option value="">Todos os Meses</option><option value="01">Jan</option><option value="02">Fev</option><option value="03">Mar</option><option value="04">Abr</option><option value="05">Mai</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Ago</option><option value="09">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option></select>
+      <select class="ctrl" id="f-status-lanc" onchange="renderLanc()"><option value="">Todos os Status</option><option value="a_conciliar">⚠ A conciliar</option><option value="conciliado">✓ Conciliados</option></select>
       <button class="btn btn-outline btn-sm" onclick="renderLanc()">Filtrar</button>
     </div>
+    <span id="lanc-pend" style="font-size:11px;color:var(--warn)"></span>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <table class="data-table">
-      <thead><tr><th>Data</th><th>Descrição</th><th>Conta</th><th>Centro de Custo</th><th>Tipo</th><th>Banco</th><th style="text-align:right">Valor</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Data</th><th>Descrição</th><th style="min-width:160px">Conta</th><th style="min-width:130px">Centro de Custo</th><th>Tipo</th><th>Banco</th><th style="text-align:right">Valor</th><th style="text-align:center">Status</th><th></th></tr></thead>
       <tbody id="tbody-lanc"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum lançamento</td></tr></tbody>
     </table>
   </div>
@@ -626,9 +630,60 @@ select.ctrl:focus{border-color:var(--g3)}
 
 <!-- ═══ CONTAS BANCÁRIAS ═══ -->
 <section class="screen" id="screen-bancos">
-  <div class="page-header"><div><h1>Contas Bancárias</h1></div><button class="btn btn-primary btn-sm">+ Nova Conta</button></div>
-  <div class="grid-3" id="bancos-grid"></div>
+  <div class="page-header">
+    <div><h1>Contas Bancárias</h1><p id="bancos-info">Cadastre seus bancos e o saldo inicial</p></div>
+    <button class="btn btn-gold btn-sm" onclick="novoBanco()">+ Nova Conta</button>
+  </div>
+  <div class="grid-3 section-gap" id="bancos-grid"></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="data-table">
+      <thead><tr><th>Banco</th><th>Agência</th><th>Conta</th><th style="text-align:right">Saldo Inicial</th><th style="text-align:right">Movimento</th><th style="text-align:right">Saldo Atual</th><th style="text-align:right">Ações</th></tr></thead>
+      <tbody id="tbody-bancos"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Nenhuma conta cadastrada</td></tr></tbody>
+    </table>
+  </div>
 </section>
+
+<!-- MODAL BANCO -->
+<div class="modal-backdrop" id="modal-banco">
+  <div class="modal" style="width:460px">
+    <h2 id="modal-banco-title">Nova Conta Bancária</h2>
+    <input type="hidden" id="bk-id"/>
+    <div class="form-row"><label>Nome do Banco *</label><input type="text" id="bk-nome" placeholder="Ex: Sicredi, Banco do Brasil, Caixa"/></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Agência</label><input type="text" id="bk-ag" placeholder="0001"/></div>
+      <div class="form-row"><label>Conta</label><input type="text" id="bk-conta" placeholder="12345-6"/></div>
+    </div>
+    <div class="form-row"><label>Saldo Inicial (R$)</label><input type="number" id="bk-saldo" step="0.01" placeholder="0,00"/></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-banco')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarBanco()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR EXTRATO -->
+<div class="modal-backdrop" id="modal-extrato">
+  <div class="modal" style="width:480px">
+    <h2>Importar Extrato Bancário</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Os lançamentos do extrato entram na aba Lançamentos. A IA sugere a conta e o centro de custo — você revisa e confirma.</p>
+    <div class="form-row"><label>Conta Bancária deste extrato *</label>
+      <select id="ext-banco"></select>
+    </div>
+    <div class="upload-zone" onclick="document.getElementById('ext-file').click()" style="margin-bottom:8px">
+      <p style="margin-bottom:6px;font-size:22px">📂</p>
+      <p><strong id="ext-file-label">Selecionar arquivo</strong><br><span style="font-size:10px;color:var(--muted)">XLSX · CSV</span></p>
+    </div>
+    <input type="file" id="ext-file" accept=".xlsx,.csv" style="display:none" onchange="onExtFile(this)"/>
+    <div id="ext-progress" style="display:none;margin:8px 0">
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div id="ext-bar" style="height:100%;background:var(--gold);width:0%;transition:.4s"></div></div>
+      <p id="ext-txt" style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-extrato')">Cancelar</button>
+      <button class="btn btn-primary" id="ext-import-btn" onclick="importarExtrato()" disabled>Importar e Classificar</button>
+    </div>
+  </div>
+</div>
 
 </main>
 
@@ -737,6 +792,7 @@ let charts      = {};
 let saveTimer   = null;
 let empresas    = [];   // lista de empresas
 let empresaAtual= null; // id da empresa ativa
+let bancos      = [];   // contas bancárias da empresa ativa
 let iaConfig    = {engine:'auto', gemini:'', groq:'', openrouter:''};
 
 // Chaves localStorage por empresa (modo offline)
@@ -938,28 +994,75 @@ async function delLanc(id) {
 function renderLanc() {
   const tipoF = document.getElementById('f-tipo-fil').value;
   const mesF  = document.getElementById('f-mes-lanc').value;
+  const stF   = document.getElementById('f-status-lanc') ? document.getElementById('f-status-lanc').value : '';
   let rows = lancamentos.filter(l => {
     if (tipoF && l.tipo !== tipoF) return false;
     if (mesF && !String(l.data).includes('-'+mesF+'-') && !String(l.data).startsWith(mesF+'/')) return false;
+    if (stF && (l.status||'') !== stF) return false;
     return true;
   });
   document.getElementById('lanc-count').textContent = rows.length + ' registros';
-  const tLbl = {R:'Receita',D:'Despesa',I:'Investimento',M:'Mútuo'};
+  const pend = lancamentos.filter(l=>l.status==='a_conciliar').length;
+  const pendEl=document.getElementById('lanc-pend');
+  if(pendEl)pendEl.textContent = pend ? ('⚠ '+pend+' lançamento(s) a conciliar') : '';
   const tBdg = {R:'badge-green',D:'badge-red',I:'badge-yellow',M:'badge-blue'};
+  // Opções dos selects
+  const contaOpts = id => '<option value="">—</option>'+contaOpcoes().map(o=>`<option value="${o.label}" ${o.label===id?'selected':''}>${o.label}</option>`).join('');
+  const ccOpts = v => '<option value="">—</option>'+CC_OPCOES.map(c=>`<option value="${c}" ${c===v?'selected':''}>${c}</option>`).join('');
   const tbody = document.getElementById('tbody-lanc');
-  tbody.innerHTML = rows.length ? rows.map(l => `
-    <tr>
-      <td>${l.data||'—'}</td>
-      <td>${l.desc}</td>
-      <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis">${l.conta||'—'}</td>
-      <td style="font-size:11px">${l.cc||'—'}</td>
-      <td><span class="badge ${tBdg[l.tipo]||'badge-gray'}">${tLbl[l.tipo]||l.tipo}</span></td>
+  tbody.innerHTML = rows.length ? rows.map(l => {
+    const aConc = l.status==='a_conciliar';
+    return `
+    <tr style="${aConc?'background:#FEF9E7':''}">
+      <td style="white-space:nowrap;font-size:11px">${l.data||'—'}</td>
+      <td style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.desc||'').replace(/"/g,'')}">${l.desc}${l._motivo?`<br><small style="color:var(--muted);font-size:9px">🤖 ${l._motivo}</small>`:''}</td>
+      <td><select class="ctrl ctrl-sm" onchange="updateLancField(${l.id},'conta',this.value)" style="font-size:11px;max-width:160px">${contaOpts(l.conta)}</select></td>
+      <td><select class="ctrl ctrl-sm" onchange="updateLancField(${l.id},'cc',this.value)" style="font-size:11px;max-width:130px">${ccOpts(l.cc)}</select></td>
+      <td><select class="ctrl ctrl-sm" onchange="updateLancField(${l.id},'tipo',this.value)" style="font-size:11px"><option value="R" ${l.tipo==='R'?'selected':''}>Receita</option><option value="D" ${l.tipo==='D'?'selected':''}>Despesa</option><option value="I" ${l.tipo==='I'?'selected':''}>Invest.</option><option value="M" ${l.tipo==='M'?'selected':''}>Mútuo</option></select></td>
       <td style="font-size:11px">${l.banco||'—'}</td>
-      <td class="td-num ${l.tipo==='R'?'color-ok':'color-danger'}">${fmtFull(l.valor)}</td>
-      <td><span class="badge badge-gray">${l.status||'—'}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick="delLanc(${l.id})" style="color:var(--danger);border-color:var(--danger);padding:3px 8px">✕</button></td>
-    </tr>`).join('')
+      <td class="td-num ${l.tipo==='R'||l.tipo==='M'?'color-ok':'color-danger'}">${fmtFull(l.valor)}</td>
+      <td style="text-align:center">${aConc?'<span class="badge badge-yellow">⚠ A conciliar</span>':'<span class="badge badge-green">✓ Conciliado</span>'}</td>
+      <td style="white-space:nowrap">
+        ${aConc?`<button class="btn btn-primary btn-sm" onclick="conciliarLanc(${l.id})" title="Confirmar conciliação">✓</button> `:''}
+        <button class="btn btn-outline btn-sm" onclick="delLanc(${l.id})" style="color:var(--danger);border-color:var(--danger);padding:3px 8px">✕</button>
+      </td>
+    </tr>`;}).join('')
     : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Nenhum lançamento encontrado</td></tr>';
+}
+
+// Atualiza um campo (conta/cc/tipo) inline e persiste
+async function updateLancField(id, field, value){
+  const l=lancamentos.find(x=>x.id===id);if(!l)return;
+  l[field]=value;
+  const col=field==='conta'?'conta':field==='cc'?'centro_custo':'tipo';
+  setSaving();
+  if(online)await sb.from('lancamentos').update({[col]:value}).eq('id',id);
+  else localStorage.setItem(lkLanc(),JSON.stringify(lancamentos));
+  setOk();
+}
+
+// Marca lançamento como conciliado e joga o valor no fluxo de caixa
+async function conciliarLanc(id){
+  const l=lancamentos.find(x=>x.id===id);if(!l)return;
+  if(!l.conta){alert('Selecione a Conta antes de conciliar.');return;}
+  l.status='conciliado';
+  setSaving();
+  if(online)await sb.from('lancamentos').update({status:'conciliado'}).eq('id',id);
+  else localStorage.setItem(lkLanc(),JSON.stringify(lancamentos));
+  // Lança no fluxo de caixa diário
+  const rid=contaParaRowId(l.conta);
+  if(rid&&l.data&&l.data.includes('-')){
+    const[y,m,d]=l.data.split('-').map(Number);
+    const sinal=(l.tipo==='R'||l.tipo==='M')?1:-1;
+    await saveFluxoCell(y,m,rid,d,(getVal(y,m,rid,d)||0)+Math.abs(parseFloat(l.valor)||0)*sinal);
+  }
+  setOk();renderLanc();renderRecentLanc();
+}
+
+// Mapeia o nome da conta (label) para o row_id do fluxo
+function contaParaRowId(label){
+  const r=ROWS.find(x=>x.label===label);
+  return r?r.id:null;
 }
 
 // ══════════════════════════════════════════════════
@@ -1419,21 +1522,214 @@ function renderPC(){
 }
 
 // ══════════════════════════════════════════════════
-// CONTAS BANCÁRIAS
+// CONTAS BANCÁRIAS (CRUD + saldo inicial)
 // ══════════════════════════════════════════════════
-const BANCOS=[
-  {nome:'Sicredi',         ag:'0001',conta:'12345-6', saldo:612760},
-  {nome:'Banco do Brasil', ag:'0002',conta:'98765-4', saldo:85400},
-  {nome:'Santander',       ag:'0033',conta:'55512-3', saldo:-12300},
-];
+const CC_OPCOES=['Gado Corte','Gado P.O','Confinamento','Administrativo','Operacional','Pastagem','RH','Genética'];
+function contaOpcoes(){return ROWS.filter(r=>!['section','subtotal','caixa'].includes(r.type));}
+
+async function loadBancos(){
+  if(online){
+    const{data}=await sb.from('contas_bancarias').select('*').eq('empresa_id',empresaAtual).order('id',{ascending:true});
+    bancos=(data||[]).map(b=>({id:b.id,nome:b.nome,ag:b.agencia,conta:b.conta,saldo:parseFloat(b.saldo_inicial)||0}));
+  }else{
+    bancos=JSON.parse(localStorage.getItem('hrBancos_'+empresaAtual)||'[]');
+  }
+  preencherSelectBancos();
+}
+
+// Movimento = soma dos lançamentos daquele banco
+function movimentoBanco(nome){
+  return lancamentos.filter(l=>(l.banco||'')===nome).reduce((s,l)=>{
+    const v=parseFloat(l.valor)||0;
+    return s + (l.tipo==='R'||l.tipo==='M'?Math.abs(v):-Math.abs(v));
+  },0);
+}
+function saldoAtualBanco(b){return (parseFloat(b.saldo)||0)+movimentoBanco(b.nome);}
+
+function preencherSelectBancos(){
+  const opts='<option value="">— Sem banco —</option>'+bancos.map(b=>`<option value="${b.nome}">${b.nome}</option>`).join('');
+  const a=document.getElementById('f-banco-lanc'); if(a)a.innerHTML=opts;
+  const e=document.getElementById('ext-banco'); if(e)e.innerHTML=bancos.length?bancos.map(b=>`<option value="${b.nome}">${b.nome}</option>`).join(''):'<option value="">Cadastre um banco primeiro</option>';
+}
+
 function renderBancos(){
-  document.getElementById('bancos-grid').innerHTML=BANCOS.map(b=>`
-    <div class="kpi" style="border-left:4px solid var(--${b.saldo>=0?'g3':'danger'})">
+  preencherSelectBancos();
+  const grid=document.getElementById('bancos-grid');
+  const tbody=document.getElementById('tbody-bancos');
+  if(!bancos.length){
+    grid.innerHTML='<div class="card" style="grid-column:1/-1;text-align:center;color:var(--muted);padding:24px">Nenhuma conta cadastrada. Clique em <strong>+ Nova Conta</strong>.</div>';
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Nenhuma conta cadastrada</td></tr>';
+    document.getElementById('bancos-info').textContent='Cadastre seus bancos e o saldo inicial';
+    return;
+  }
+  const totalAtual=bancos.reduce((s,b)=>s+saldoAtualBanco(b),0);
+  document.getElementById('bancos-info').textContent=bancos.length+' conta(s) · Saldo total atual: '+fmtFull(totalAtual);
+  grid.innerHTML=bancos.map(b=>{
+    const sa=saldoAtualBanco(b);
+    return `<div class="kpi" style="border-left:4px solid var(--${sa>=0?'g3':'danger'})">
       <div class="kpi-label">${b.nome}</div>
-      <div class="kpi-value ${b.saldo<0?'color-danger':''}">${fmtFull(b.saldo)}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Ag: ${b.ag} · Conta: ${b.conta}</div>
-      <div class="kpi-bar mt8"><div class="kpi-bar-fill" style="width:${Math.min(100,Math.abs(b.saldo)/10000)}%;background:${b.saldo<0?'var(--danger)':'var(--gold)'}"></div></div>
-    </div>`).join('');
+      <div class="kpi-value ${sa<0?'color-danger':''}">${fmtFull(sa)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Ag: ${b.ag||'—'} · Conta: ${b.conta||'—'}</div>
+    </div>`;
+  }).join('');
+  tbody.innerHTML=bancos.map(b=>{
+    const mov=movimentoBanco(b.nome), sa=saldoAtualBanco(b);
+    return `<tr>
+      <td style="font-weight:600">${b.nome}</td>
+      <td style="font-size:11px">${b.ag||'—'}</td>
+      <td style="font-size:11px">${b.conta||'—'}</td>
+      <td class="td-num">${fmtFull(b.saldo)}</td>
+      <td class="td-num ${mov<0?'color-danger':'color-ok'}">${fmtFull(mov)}</td>
+      <td class="td-num" style="font-weight:700;color:${sa<0?'var(--danger)':'var(--g2)'}">${fmtFull(sa)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-outline btn-sm" onclick="editarBanco(${b.id})" title="Editar">✏</button>
+        <button class="btn btn-outline btn-sm" onclick="excluirBanco(${b.id})" style="color:var(--danger);border-color:var(--danger)" title="Excluir">✕</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function novoBanco(){
+  document.getElementById('modal-banco-title').textContent='Nova Conta Bancária';
+  document.getElementById('bk-id').value='';
+  document.getElementById('bk-nome').value='';
+  document.getElementById('bk-ag').value='';
+  document.getElementById('bk-conta').value='';
+  document.getElementById('bk-saldo').value='';
+  openModal('modal-banco');
+}
+function editarBanco(id){
+  const b=bancos.find(x=>x.id===id);if(!b)return;
+  document.getElementById('modal-banco-title').textContent='Editar Conta Bancária';
+  document.getElementById('bk-id').value=b.id;
+  document.getElementById('bk-nome').value=b.nome;
+  document.getElementById('bk-ag').value=b.ag||'';
+  document.getElementById('bk-conta').value=b.conta||'';
+  document.getElementById('bk-saldo').value=b.saldo||0;
+  openModal('modal-banco');
+}
+async function salvarBanco(){
+  const id=document.getElementById('bk-id').value;
+  const nome=document.getElementById('bk-nome').value.trim();
+  const ag=document.getElementById('bk-ag').value.trim();
+  const conta=document.getElementById('bk-conta').value.trim();
+  const saldo=parseFloat(document.getElementById('bk-saldo').value)||0;
+  if(!nome){alert('Informe o nome do banco.');return;}
+  setSaving();
+  if(id){
+    const bid=parseInt(id);
+    if(online)await sb.from('contas_bancarias').update({nome,agencia:ag,conta,saldo_inicial:saldo}).eq('id',bid);
+    const b=bancos.find(x=>x.id===bid);if(b)Object.assign(b,{nome,ag,conta,saldo});
+  }else{
+    if(online){
+      const{data}=await sb.from('contas_bancarias').insert([{empresa_id:empresaAtual,nome,agencia:ag,conta,saldo_inicial:saldo}]).select();
+      if(data&&data[0])bancos.push({id:data[0].id,nome,ag,conta,saldo});
+    }else{
+      const newId=Math.max(0,...bancos.map(b=>b.id))+1;
+      bancos.push({id:newId,nome,ag,conta,saldo});
+    }
+  }
+  if(!online)localStorage.setItem('hrBancos_'+empresaAtual,JSON.stringify(bancos));
+  setOk();closeModal('modal-banco');renderBancos();
+}
+async function excluirBanco(id){
+  const b=bancos.find(x=>x.id===id);if(!b)return;
+  if(!confirm(`Excluir a conta "${b.nome}"?\nOs lançamentos ligados a ela não serão apagados.`))return;
+  setSaving();
+  if(online)await sb.from('contas_bancarias').delete().eq('id',id);
+  bancos=bancos.filter(x=>x.id!==id);
+  if(!online)localStorage.setItem('hrBancos_'+empresaAtual,JSON.stringify(bancos));
+  setOk();renderBancos();
+}
+
+// ══════════════════════════════════════════════════
+// IMPORTAR EXTRATO → LANÇAMENTOS (com classificação IA)
+// ══════════════════════════════════════════════════
+let _extFile=null;
+function abrirImportExtrato(){
+  if(!bancos.length){
+    if(confirm('Você ainda não cadastrou nenhuma conta bancária.\nDeseja cadastrar agora?')){
+      goTo('bancos',document.querySelector('.nav-item[onclick*="bancos"]'));
+      setTimeout(novoBanco,150);
+    }
+    return;
+  }
+  _extFile=null;
+  preencherSelectBancos();
+  document.getElementById('ext-file-label').textContent='Selecionar arquivo';
+  document.getElementById('ext-import-btn').disabled=true;
+  document.getElementById('ext-progress').style.display='none';
+  document.getElementById('ext-file').value='';
+  openModal('modal-extrato');
+}
+function onExtFile(inp){
+  _extFile=inp.files[0]||null;
+  document.getElementById('ext-file-label').textContent=_extFile?_extFile.name:'Selecionar arquivo';
+  document.getElementById('ext-import-btn').disabled=!_extFile;
+}
+async function importarExtrato(){
+  if(!_extFile)return;
+  const banco=document.getElementById('ext-banco').value;
+  if(!banco){alert('Selecione a conta bancária.');return;}
+  const prog=document.getElementById('ext-progress'), bar=document.getElementById('ext-bar'), txt=document.getElementById('ext-txt');
+  prog.style.display='block';bar.style.width='10%';txt.textContent='Lendo arquivo...';
+  document.getElementById('ext-import-btn').disabled=true;
+
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const linhas=XLSX.utils.sheet_to_json(ws,{defval:''});
+    if(!linhas.length){alert('Extrato vazio ou inválido.');prog.style.display='none';return;}
+
+    bar.style.width='35%';txt.textContent='IA classificando '+linhas.length+' lançamentos...';
+    const accountsForAI=contaOpcoes().map(r=>({id:r.id,label:r.label,tipo:r.type==='receita'?'R':r.type==='custo'?'D':r.type==='invest'?'I':'M'}));
+    const historicoForAI=lancamentos.slice(-40).map(l=>({data:l.data,desc:l.desc,tipo:l.tipo,conta:l.conta,valor:l.valor}));
+
+    let sugestoes=[];
+    if(iaConfig.engine!=='keyword'){
+      try{
+        const resp=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({entries:linhas,accounts:accountsForAI,historico:historicoForAI,engine:iaConfig.engine,keys:{gemini:iaConfig.gemini,groq:iaConfig.groq,openrouter:iaConfig.openrouter}})});
+        const data=await resp.json();
+        if(data.suggestions)sugestoes=data.suggestions;
+      }catch(err){/* cai no fallback abaixo */}
+    }
+
+    bar.style.width='70%';txt.textContent='Gravando lançamentos...';
+    let count=0;
+    for(let i=0;i<linhas.length;i++){
+      const row=linhas[i];
+      const dataRaw=String(row.Data||row.data||row.DATE||row.DATA||'').trim();
+      const dataFmt=dataRaw.includes('/')?dataRaw.split('/').reverse().join('-'):dataRaw||new Date().toISOString().slice(0,10);
+      const hist=String(row.Histórico||row.historico||row.Descricao||row.HISTORICO||row.Descrição||'').trim();
+      const valor=parseFloat(String(row.Valor||row.valor||row.VALOR||0).replace('.','').replace(',','.'))||parseFloat(row.Valor||row.valor||0)||0;
+      if(!hist&&!valor)continue;
+      const sug=sugestoes.find(s=>s.i===i);
+      const conta=sug?sug.conta_label:'';
+      const tipo=sug?sug.tipo:(valor>=0?'R':'D');
+      const lanc={
+        data:dataFmt,desc:hist||'(sem histórico)',conta,cc:'',tipo,banco,
+        valor:Math.abs(valor),obs:hist,status:'a_conciliar',_motivo:sug?sug.motivo:''
+      };
+      if(online){
+        const{data:d}=await sb.from('lancamentos').insert([{
+          empresa_id:empresaAtual,data:lanc.data,descricao:lanc.desc,conta:lanc.conta,centro_custo:'',
+          tipo:lanc.tipo,banco:banco,valor:lanc.valor,obs:lanc.obs,status:'a_conciliar',
+          ano:parseInt(lanc.data.slice(0,4)),mes:parseInt(lanc.data.slice(5,7)),dia:parseInt(lanc.data.slice(8,10))
+        }]).select();
+        if(d&&d[0]){lanc.id=d[0].id;}
+      }else{lanc.id=Date.now()+i;}
+      lancamentos.unshift(lanc);count++;
+    }
+    if(!online)localStorage.setItem(lkLanc(),JSON.stringify(lancamentos));
+    bar.style.width='100%';txt.textContent='Concluído!';
+    closeModal('modal-extrato');
+    goTo('lancamentos',document.querySelector('.nav-item[onclick*="lancamentos"]'));
+    document.getElementById('f-status-lanc').value='a_conciliar';
+    renderLanc();
+    alert(`✓ ${count} lançamentos importados do extrato (${banco}).\nRevise a Conta e o Centro de Custo e clique em ✓ para conciliar cada um.`);
+  };
+  reader.readAsArrayBuffer(_extFile);
 }
 
 // ══════════════════════════════════════════════════
@@ -1877,6 +2173,7 @@ async function trocarEmpresa(id){
   fluxoCache={};
   setSaving();
   await loadLancamentos();
+  await loadBancos();
   setOk();
   // Re-renderiza a tela ativa
   const active=document.querySelector('.screen.active');
@@ -1886,6 +2183,7 @@ async function trocarEmpresa(id){
     else if(sid==='fluxo')renderFCMes();
     else if(sid==='lancamentos')renderLanc();
     else if(sid==='empresas')renderEmpresas();
+    else if(sid==='bancos')renderBancos();
   }
   renderRecentLanc();
 }
@@ -2159,6 +2457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadConfig();
   await loadEmpresas();
   await loadLancamentos();
+  await loadBancos();
   renderSetupBanner(online);
   renderDash();
 });
